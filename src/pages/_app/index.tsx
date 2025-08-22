@@ -1,14 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import { z } from 'zod'
-import { cn } from '@/lib/utils'
-import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Save, Download, FileText } from 'lucide-react'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, AlignmentType, WidthType, BorderStyle } from 'docx'
 import { saveAs } from 'file-saver'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+
+// Componentes extraídos
+import { CashFlowForm } from '@/components/CashFlowForm'
+import { CashFlowTable } from '@/components/CashFlowTable'
+import { BalanceInput } from '@/components/BalanceInput'
+import { TypeSummary } from '@/components/TypeSummary'
+import { ExportButtons } from '@/components/ExportButtons'
+import { FinancialSummary } from '@/components/FinancialSummary'
 
 export const Route = createFileRoute('/_app/')({
   component: Index,
@@ -63,443 +67,9 @@ const entryTypes = [
   'Entrada',
 ]
 
-const exitTypes = [
-  'Dízimo',
-  'Oferta',
-  'Oferta Construção',
-  'Aluguel',
-  'Resgate',
-  'Reembolso',
-  'Jantar Coordenadoria',
-  'Despesas Pastor',
-  'Tarifa Banco',
-  'Manutenção',
-  'Energia',
-  'Água',
-  'Limpeza',
-  'Contabilidade',
-  'AG',
-  'Presbitério Rio Preto',
-  'Internet',
-  'Missões',
-  'Ministérios',
-  'Mercado',
-  'Eventos',
-  'Lembranças',
-  'Equipamentos',
-  'Documentos Administrativos',
-  'Ajuda de Custo',
-  'Investimentos',
-  'Fúnebre',
-  'Aplicação Resgate',
-  'Entrada',
-]
+const exitTypes = [...entryTypes]
 
-function CurrencyInput({ value, onChange, placeholder, error }: {
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  error?: string
-}) {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let inputValue = e.target.value
-    
-    // Remove tudo que não é dígito
-    inputValue = inputValue.replace(/\D/g, '')
-    
-    // Converte para número e formata como moeda
-    const numericValue = parseInt(inputValue) || 0
-    const formattedValue = (numericValue / 100).toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    })
-    
-    onChange(formattedValue)
-  }
 
-  return (
-    <div className="space-y-1">
-      <Input
-        type="text"
-        value={value}
-        onChange={handleChange}
-        placeholder={placeholder}
-        className={cn(
-          "bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-400",
-          error && "border-red-500"
-        )}
-      />
-      {error && (
-        <p className="text-sm text-red-400">{error}</p>
-      )}
-    </div>
-  )
-}
-
-function SearchableSelect({ options, value, onChange, placeholder, error }: {
-  options: string[]
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  error?: string
-}) {
-  return (
-    <div className="space-y-1">
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className={cn(
-          "bg-zinc-800 border-zinc-700 text-zinc-100",
-          error && "border-red-500"
-        )}>
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent className="bg-zinc-800 border-zinc-700">
-          {options.map((option) => (
-            <SelectItem 
-              key={option} 
-              value={option}
-              className="text-zinc-100 focus:bg-zinc-700 focus:text-zinc-100"
-            >
-              {option}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {error && (
-        <p className="text-sm text-red-400">{error}</p>
-      )}
-    </div>
-  )
-}
-
-function CashFlowForm({ 
-  title, 
-  icon, 
-  types, 
-  onSubmit, 
-  schema 
-}: {
-  title: string
-  icon: React.ReactNode
-  types: string[]
-  onSubmit: (data: any) => void
-  schema: z.ZodSchema
-}) {
-  const [description, setDescription] = useState('')
-  const [type, setType] = useState('')
-  const [amount, setAmount] = useState('')
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Converter valor monetário para número
-    const numericAmount = parseFloat(
-      amount.replace(/[^\d,]/g, '').replace(',', '.')
-    )
-    
-    const formData = {
-      description: description.trim(),
-      type,
-      amount: numericAmount
-    }
-    
-    try {
-      const validatedData = schema.parse(formData)
-      onSubmit(validatedData)
-      
-      // Limpar formulário
-      setDescription('')
-      setType('')
-      setAmount('')
-      setErrors({})
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const newErrors: Record<string, string> = {}
-        error.errors.forEach((err) => {
-          if (err.path[0]) {
-            newErrors[err.path[0] as string] = err.message
-          }
-        })
-        setErrors(newErrors)
-      }
-    }
-  }
-
-  return (
-    <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
-      <div className="flex items-center gap-3 mb-6">
-        {icon}
-        <h2 className="text-xl font-bold text-zinc-100">{title}</h2>
-      </div>
-      
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-2">
-            Descrição
-          </label>
-          <Input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Digite a descrição..."
-            className={cn(
-              "bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-400",
-              errors.description && "border-red-500"
-            )}
-          />
-          {errors.description && (
-            <p className="text-sm text-red-400 mt-1">{errors.description}</p>
-          )}
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-2">
-            Categoria
-          </label>
-          <SearchableSelect
-            options={types}
-            value={type}
-            onChange={setType}
-            placeholder="Selecione uma categoria..."
-            error={errors.type}
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-2">
-            Valor
-          </label>
-          <CurrencyInput
-            value={amount}
-            onChange={setAmount}
-            placeholder="R$ 0,00"
-            error={errors.amount}
-          />
-        </div>
-        
-        <Button 
-          type="submit" 
-          className="w-full bg-zinc-700 hover:bg-zinc-600 text-zinc-100"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Adicionar {title.slice(0, -1)}
-        </Button>
-      </form>
-    </div>
-  )
-}
-
-function CashFlowTable({ 
-  title, 
-  data, 
-  onDelete 
-}: {
-  title: string
-  data: Array<{ id: string; description: string; type: string; amount: number; date: string }>
-  onDelete: (id: string) => void
-}) {
-  if (data.length === 0) {
-    return (
-      <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
-        <h3 className="text-xl font-bold text-zinc-100 mb-6">{title}</h3>
-        <div className="text-center py-8">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-zinc-800 flex items-center justify-center">
-            <DollarSign className="h-6 w-6 text-zinc-500" />
-          </div>
-          <p className="text-zinc-400">Nenhum registro encontrado</p>
-          <p className="text-zinc-500 text-sm mt-1">Adicione o primeiro registro usando o formulário acima</p>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-zinc-100">{title}</h3>
-        <div className="text-sm text-zinc-400 bg-zinc-800 px-2 py-1 rounded">
-          {data.length} {data.length === 1 ? 'registro' : 'registros'}
-        </div>
-      </div>
-      
-      <div className="space-y-3 max-h-80 overflow-y-auto">
-        {data.map((item) => (
-          <div 
-            key={item.id} 
-            className="group bg-zinc-800 hover:bg-zinc-750 rounded-lg border border-zinc-700 hover:border-zinc-600 transition-all duration-200 p-4"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-2">
-                  <h4 className="font-medium text-zinc-100 truncate">
-                    {item.description}
-                  </h4>
-                  <span className={cn(
-                    "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
-                    title.includes('Entradas') 
-                      ? "bg-green-900/30 text-green-300" 
-                      : "bg-red-900/30 text-red-300"
-                  )}>
-                    {item.type}
-                  </span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-zinc-400">{item.date}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-semibold text-zinc-100">
-                      {new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                      }).format(item.amount)}
-                    </span>
-                    <Button
-                      onClick={() => onDelete(item.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-400 hover:text-red-400 hover:bg-red-900/20 h-6 w-6 p-0"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      
-      <div className="mt-4 pt-4 border-t border-zinc-700">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-zinc-300">Total</span>
-          <span className="text-lg font-bold text-zinc-100">
-            {new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL'
-            }).format(data.reduce((sum, item) => sum + item.amount, 0))}
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function BalanceInput({ label, value, onSave }: {
-  label: string
-  value: string
-  onSave: (value: number) => void
-}) {
-  const [inputValue, setInputValue] = useState(value)
-  const [isEditing, setIsEditing] = useState(false)
-
-  useEffect(() => {
-    setInputValue(value)
-  }, [value])
-
-  const handleSave = () => {
-    const numericValue = parseFloat(
-      inputValue.replace(/[^\d,]/g, '').replace(',', '.')
-    ) || 0
-    
-    onSave(numericValue)
-    setIsEditing(false)
-  }
-
-  const handleCancel = () => {
-    setInputValue(value)
-    setIsEditing(false)
-  }
-
-  return (
-    <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
-      <label className="block text-sm font-medium text-zinc-300 mb-2">
-        {label}
-      </label>
-      
-      {isEditing ? (
-        <div className="flex gap-2">
-          <CurrencyInput
-            value={inputValue}
-            onChange={setInputValue}
-            placeholder="R$ 0,00"
-          />
-          <Button
-            onClick={handleSave}
-            size="sm"
-            className="bg-zinc-700 hover:bg-zinc-600 text-zinc-100"
-          >
-            <Save className="h-4 w-4" />
-          </Button>
-          <Button
-            onClick={handleCancel}
-            variant="outline"
-            size="sm"
-            className="bg-zinc-600 hover:bg-zinc-500 border-zinc-500 text-zinc-100"
-          >
-            Cancelar
-          </Button>
-        </div>
-      ) : (
-        <div 
-          className="flex items-center justify-between p-3 bg-zinc-800 rounded border border-zinc-700 cursor-pointer hover:bg-zinc-750"
-          onClick={() => setIsEditing(true)}
-        >
-          <span className="font-bold text-zinc-100">{inputValue}</span>
-          <span className="text-xs text-zinc-400">Clique para editar</span>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function TypeSummary({ title, data, icon }: {
-  title: string
-  data: Array<{ id: string; description: string; type: string; amount: number; date: string }>
-  icon: React.ReactNode
-}) {
-  const typeTotals = data.reduce((acc, item) => {
-    if (!acc[item.type]) {
-      acc[item.type] = 0
-    }
-    acc[item.type] += item.amount
-    return acc
-  }, {} as Record<string, number>)
-
-  const sortedTypes = Object.entries(typeTotals)
-    .sort(([,a], [,b]) => b - a)
-    .filter(([,value]) => value > 0)
-
-  if (sortedTypes.length === 0) {
-    return null
-  }
-
-  return (
-    <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
-      <div className="flex items-center gap-3 mb-4">
-        {icon}
-        <h3 className="text-lg font-semibold text-zinc-100">{title}</h3>
-      </div>
-      
-      <div className="space-y-2">
-        {sortedTypes.map(([type, total]) => (
-          <div key={type} className="flex items-center justify-between p-3 bg-zinc-800 rounded border border-zinc-700">
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-zinc-300">{type}</span>
-                <span className="font-bold text-zinc-100">
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL'
-                  }).format(total)}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 function Index() {
   const [entries, setEntries] = useState<(EntryData & { id: string; date: string })[]>([])
@@ -1196,175 +766,68 @@ function Index() {
           <p className="text-zinc-400">Controle de Fluxo de Caixa - Gerencie suas entradas e saídas financeiras</p>
         </div>
 
-        {/* Resumo Financeiro */}
-        <div className="flex flex-row md:flex-row gap-6 mb-8">
-          <div className="bg-green-900/20 p-6 rounded-lg border border-green-800 flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <TrendingUp className="h-6 w-6 text-green-400" />
-              <h3 className="text-lg font-semibold text-green-400">Total Entradas</h3>
-            </div>
-            <p className="text-2xl font-bold text-zinc-100">
-              {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              }).format(totalEntries)}
-            </p>
-          </div>
+        <FinancialSummary totalEntries={totalEntries} totalExits={totalExits} balance={balance} />
 
-          <div className="bg-red-900/20 p-6 rounded-lg border border-red-800 flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <TrendingDown className="h-6 w-6 text-red-400" />
-              <h3 className="text-lg font-semibold text-red-400">Total Saídas</h3>
-            </div>
-            <p className="text-2xl font-bold text-zinc-100">
-              {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              }).format(totalExits)}
-            </p>
-          </div>
-
-          <div className={cn(
-            "p-6 rounded-lg border flex-1",
-            balance >= 0 
-              ? "bg-blue-900/20 border-blue-800" 
-              : "bg-orange-900/20 border-orange-800"
-          )}>
-            <div className="flex items-center gap-3 mb-2">
-              <DollarSign className={cn(
-                "h-6 w-6",
-                balance >= 0 ? "text-blue-400" : "text-orange-400"
-              )} />
-              <h3 className={cn(
-                "text-lg font-semibold",
-                balance >= 0 ? "text-blue-400" : "text-orange-400"
-              )}>Saldo do Mês</h3>
-            </div>
-            <p className="text-2xl font-bold text-zinc-100">
-              {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              }).format(balance)}
-            </p>
-          </div>
-        </div>
-
-        {/* Formulários e Listas */}
-        <div className="flex flex-row lg:flex-row gap-8 mb-8">
-          {/* Coluna de Entradas */}
-          <div className="flex-1 space-y-6">
+        <div className="flex flex-row lg:flex-col gap-8 mb-8 w-full">
+          <div className="space-y-6 w-full">
             <CashFlowForm
-              title="Entradas"
-              icon={<TrendingUp className="h-6 w-6 text-green-400" />}
+              title="Adicionar Entrada"
+              icon={<TrendingUp className="h-5 w-5 text-green-400" />}
               types={entryTypes}
               onSubmit={handleAddEntry}
               schema={entrySchema}
             />
-            
-            <CashFlowTable
-              title="Entradas Registradas"
-              data={entries}
-              onDelete={handleDeleteEntry}
-            />
+            <CashFlowTable title="Entradas Registradas" data={entries} onDelete={handleDeleteEntry} />
           </div>
-          
-          {/* Coluna de Saídas */}
-          <div className="flex-1 space-y-6">
+
+          <div className="space-y-6 w-full">
             <CashFlowForm
-              title="Saídas"
-              icon={<TrendingDown className="h-6 w-6 text-red-400" />}
+              title="Adicionar Saída"
+              icon={<TrendingDown className="h-5 w-5 text-red-400" />}
               types={exitTypes}
               onSubmit={handleAddExit}
               schema={exitSchema}
             />
-            
-            <CashFlowTable
-              title="Saídas Registradas"
-              data={exits}
-              onDelete={handleDeleteExit}
-            />
+            <CashFlowTable title="Saídas Registradas" data={exits} onDelete={handleDeleteExit} />
           </div>
         </div>
 
-        {/* Campos de Saldo */}
-        <div className="flex flex-col md:flex-row gap-6 mb-8">
-          <div className="flex-1">
-            <BalanceInput
-              label="Saldo Inicial"
-              value={new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              }).format(saldoInicial)}
-              onSave={setSaldoInicial}
-            />
-          </div>
-          
+        <div className="flex flex-col lg:flex-row gap-6 mb-8">
+          <BalanceInput
+            label="Saldo Inicial"
+            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldoInicial)}
+            onSave={setSaldoInicial}
+          />
           <BalanceInput
             label="Saldo Final"
-            value={new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL'
-            }).format(saldoFinal)}
+            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldoFinal)}
             onSave={setSaldoFinal}
           />
-          
           <BalanceInput
             label="Aplicação Investimento"
-            value={new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL'
-            }).format(aplicacaoInvestimento)}
+            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(aplicacaoInvestimento)}
             onSave={setAplicacaoInvestimento}
           />
         </div>
 
-        {/* Resumos por Categoria */}
-        <div className="flex flex-col lg:flex-row gap-8 mb-8">
-          <div className="flex-1">
-            <TypeSummary
-              title="Resumo de Entradas por Categoria"
-              data={entries}
-              icon={<TrendingUp className="h-5 w-5 text-green-400" />}
-            />
-          </div>
-          
-          <div className="flex-1">
-            <TypeSummary
-              title="Resumo de Saídas por Categoria"
-              data={exits}
-              icon={<TrendingDown className="h-5 w-5 text-red-400" />}
-            />
-          </div>
+        <div className="flex flex-col lg:flex-row gap-6 mb-8">
+          <TypeSummary
+            title="Resumo de Entradas por Categoria"
+            data={entries}
+            icon={<TrendingUp className="h-5 w-5 text-green-400" />}
+          />
+          <TypeSummary
+            title="Resumo de Saídas por Categoria"
+            data={exits}
+            icon={<TrendingDown className="h-5 w-5 text-red-400" />}
+          />
         </div>
 
-        {/* Botões de Ação */}
-        <div className="flex flex-wrap gap-4 justify-center">
-          <Button
-            onClick={exportToExcel}
-            size="lg"
-            className="text-lg font-medium shadow-lg bg-green-700 hover:bg-green-600 text-zinc-50 border border-green-500"
-          >
-            <Download className="h-5 w-5 mr-2" />
-            Exportar para Excel
-          </Button>
-
-          <Button
-            onClick={exportToDocx}
-            size="lg"
-            className="text-lg font-medium shadow-lg bg-blue-700 hover:bg-blue-600 text-zinc-50 border border-blue-500"
-          >
-            <FileText className="h-5 w-5 mr-2" />
-            Exportar para DOCX
-          </Button>
-
-          <Button
-            onClick={handleRestart}
-            variant="destructive"
-            className="text-lg font-medium shadow-lg bg-red-800 hover:bg-red-700 text-zinc-50 border border-red-600"
-          >
-            Restart
-          </Button>
-        </div>
+        <ExportButtons
+          onExportExcel={exportToExcel}
+          onExportDocx={exportToDocx}
+          onRestart={handleRestart}
+        />
       </div>
     </div>
   )
