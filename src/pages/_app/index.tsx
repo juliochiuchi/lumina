@@ -1,11 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { z } from 'zod'
 import { cn } from '@/lib/utils'
-import { Search, Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Save, Download } from 'lucide-react'
+import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Save, Download } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
-export const Route = createFileRoute('/_app/')({  
+export const Route = createFileRoute('/_app/')({
   component: Index,
 })
 
@@ -27,63 +30,110 @@ type ExitData = z.infer<typeof exitSchema>
 
 // Tipos disponíveis
 const entryTypes = [
-  'Vendas',
-  'Serviços',
+  'Dízimo',
+  'Oferta',
+  'Oferta Construção',
+  'Aluguel',
+  'Resgate',
+  'Reembolso',
+  'Jantar Coordenadoria',
+  'Despesas Pastor',
+  'Tarifa Banco',
+  'Manutenção',
+  'Energia',
+  'Água',
+  'Limpeza',
+  'Contabilidade',
+  'AG',
+  'Presbitério Rio Preto',
+  'Internet',
+  'Missões',
+  'Ministérios',
+  'Mercado',
+  'Eventos',
+  'Lembranças',
+  'Equipamentos',
+  'Documentos Administrativos',
+  'Ajuda de Custo',
   'Investimentos',
-  'Empréstimos',
-  'Outros Recebimentos'
+  'Fúnebre',
+  'Aplicação Resgate',
+  'Entrada',
 ]
 
 const exitTypes = [
-  'Fornecedores',
-  'Salários',
+  'Dízimo',
+  'Oferta',
+  'Oferta Construção',
   'Aluguel',
-  'Utilities',
-  'Marketing',
-  'Impostos',
-  'Outros Gastos'
+  'Resgate',
+  'Reembolso',
+  'Jantar Coordenadoria',
+  'Despesas Pastor',
+  'Tarifa Banco',
+  'Manutenção',
+  'Energia',
+  'Água',
+  'Limpeza',
+  'Contabilidade',
+  'AG',
+  'Presbitério Rio Preto',
+  'Internet',
+  'Missões',
+  'Ministérios',
+  'Mercado',
+  'Eventos',
+  'Lembranças',
+  'Equipamentos',
+  'Documentos Administrativos',
+  'Ajuda de Custo',
+  'Investimentos',
+  'Fúnebre',
+  'Aplicação Resgate',
+  'Entrada',
 ]
 
-// Componente de Input de Moeda
 function CurrencyInput({ value, onChange, placeholder, error }: {
   value: string
   onChange: (value: string) => void
   placeholder?: string
   error?: string
 }) {
-  const formatCurrency = (value: string) => {
-    const numbers = value.replace(/\D/g, '')
-    const amount = parseFloat(numbers) / 100
-    return new Intl.NumberFormat('pt-BR', {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let inputValue = e.target.value
+    
+    // Remove tudo que não é dígito
+    inputValue = inputValue.replace(/\D/g, '')
+    
+    // Converte para número e formata como moeda
+    const numericValue = parseInt(inputValue) || 0
+    const formattedValue = (numericValue / 100).toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(amount || 0)
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCurrency(e.target.value)
-    onChange(formatted)
+    })
+    
+    onChange(formattedValue)
   }
 
   return (
-    <div className="relative">
-      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-      <input
+    <div className="space-y-1">
+      <Input
         type="text"
         value={value}
         onChange={handleChange}
         placeholder={placeholder}
         className={cn(
-          "w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all",
-          error ? "border-red-500" : "border-gray-300"
+          "bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-400",
+          error && "border-red-500"
         )}
       />
-      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+      {error && (
+        <p className="text-sm text-red-400">{error}</p>
+      )}
     </div>
   )
 }
 
-// Componente de Dropdown com Busca
 function SearchableSelect({ options, value, onChange, placeholder, error }: {
   options: string[]
   value: string
@@ -91,61 +141,34 @@ function SearchableSelect({ options, value, onChange, placeholder, error }: {
   placeholder?: string
   error?: string
 }) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [search, setSearch] = useState('')
-
-  const filteredOptions = options.filter(option =>
-    option.toLowerCase().includes(search.toLowerCase())
-  )
-
-  const handleSelect = (option: string) => {
-    onChange(option)
-    setIsOpen(false)
-    setSearch('')
-  }
-
   return (
-    <div className="relative">
-      <div className="relative">
-        <input
-          type="text"
-          value={isOpen ? search : value}
-          onChange={(e) => setSearch(e.target.value)}
-          onFocus={() => setIsOpen(true)}
-          onBlur={() => setTimeout(() => setIsOpen(false), 200)}
-          placeholder={placeholder}
-          className={cn(
-            "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all",
-            error ? "border-red-500" : "border-gray-300"
-          )}
-        />
-        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-      </div>
-      
-      {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-          {filteredOptions.length > 0 ? (
-            filteredOptions.map((option, index) => (
-              <div
-                key={index}
-                onClick={() => handleSelect(option)}
-                className="px-4 py-2 hover:bg-gray-100 cursor-pointer transition-colors"
-              >
-                {option}
-              </div>
-            ))
-          ) : (
-            <div className="px-4 py-2 text-gray-500">Nenhuma opção encontrada</div>
-          )}
-        </div>
+    <div className="space-y-1">
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className={cn(
+          "bg-zinc-800 border-zinc-700 text-zinc-100",
+          error && "border-red-500"
+        )}>
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent className="bg-zinc-800 border-zinc-700">
+          {options.map((option) => (
+            <SelectItem 
+              key={option} 
+              value={option}
+              className="text-zinc-100 focus:bg-zinc-700 focus:text-zinc-100"
+            >
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {error && (
+        <p className="text-sm text-red-400">{error}</p>
       )}
-      
-      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
   )
 }
 
-// Componente de Formulário
 function CashFlowForm({ 
   title, 
   icon, 
@@ -159,30 +182,33 @@ function CashFlowForm({
   onSubmit: (data: any) => void
   schema: z.ZodSchema
 }) {
-  const [formData, setFormData] = useState({
-    description: '',
-    type: '',
-    amount: 'R$ 0,00'
-  })
+  const [description, setDescription] = useState('')
+  const [type, setType] = useState('')
+  const [amount, setAmount] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Converter valor da moeda para número
+    // Converter valor monetário para número
     const numericAmount = parseFloat(
-      formData.amount.replace(/[R$\s.]/g, '').replace(',', '.')
+      amount.replace(/[^\d,]/g, '').replace(',', '.')
     )
     
-    const dataToValidate = {
-      ...formData,
+    const formData = {
+      description: description.trim(),
+      type,
       amount: numericAmount
     }
     
     try {
-      const validData = schema.parse(dataToValidate)
-      onSubmit(validData)
-      setFormData({ description: '', type: '', amount: 'R$ 0,00' })
+      const validatedData = schema.parse(formData)
+      onSubmit(validatedData)
+      
+      // Limpar formulário
+      setDescription('')
+      setType('')
+      setAmount('')
       setErrors({})
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -198,70 +224,69 @@ function CashFlowForm({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+    <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
       <div className="flex items-center gap-3 mb-6">
         {icon}
-        <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
+        <h2 className="text-xl font-bold text-zinc-100">{title}</h2>
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-zinc-300 mb-2">
             Descrição
           </label>
-          <input
+          <Input
             type="text"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
             placeholder="Digite a descrição..."
             className={cn(
-              "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all",
-              errors.description ? "border-red-500" : "border-gray-300"
+              "bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-400",
+              errors.description && "border-red-500"
             )}
           />
           {errors.description && (
-            <p className="text-red-500 text-sm mt-1">{errors.description}</p>
+            <p className="text-sm text-red-400 mt-1">{errors.description}</p>
           )}
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tipo
+          <label className="block text-sm font-medium text-zinc-300 mb-2">
+            Categoria
           </label>
           <SearchableSelect
             options={types}
-            value={formData.type}
-            onChange={(value) => setFormData({ ...formData, type: value })}
-            placeholder="Selecione o tipo..."
+            value={type}
+            onChange={setType}
+            placeholder="Selecione uma categoria..."
             error={errors.type}
           />
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-zinc-300 mb-2">
             Valor
           </label>
           <CurrencyInput
-            value={formData.amount}
-            onChange={(value) => setFormData({ ...formData, amount: value })}
+            value={amount}
+            onChange={setAmount}
             placeholder="R$ 0,00"
             error={errors.amount}
           />
         </div>
         
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+        <Button 
+          type="submit" 
+          className="w-full bg-zinc-700 hover:bg-zinc-600 text-zinc-100"
         >
-          <Plus className="h-4 w-4" />
-          Adicionar
-        </button>
+          <Plus className="h-4 w-4 mr-2" />
+          Adicionar {title.slice(0, -1)}
+        </Button>
       </form>
     </div>
   )
 }
 
-// Componente de Tabela
 function CashFlowTable({ 
   title, 
   data, 
@@ -271,185 +296,274 @@ function CashFlowTable({
   data: Array<{ id: string; description: string; type: string; amount: number; date: string }>
   onDelete: (id: string) => void
 }) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(amount)
+  if (data.length === 0) {
+    return (
+      <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
+        <h3 className="text-xl font-bold text-zinc-100 mb-6">{title}</h3>
+        <div className="text-center py-8">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-zinc-800 flex items-center justify-center">
+            <DollarSign className="h-6 w-6 text-zinc-500" />
+          </div>
+          <p className="text-zinc-400">Nenhum registro encontrado</p>
+          <p className="text-zinc-500 text-sm mt-1">Adicione o primeiro registro usando o formulário acima</p>
+        </div>
+      </div>
+    )
   }
 
-  const total = data.reduce((sum, item) => sum + item.amount, 0)
-
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mt-6">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-          <div className="text-lg font-bold text-blue-600">
-            Total: {formatCurrency(total)}
-          </div>
+    <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-bold text-zinc-100">{title}</h3>
+        <div className="text-sm text-zinc-400 bg-zinc-800 px-2 py-1 rounded">
+          {data.length} {data.length === 1 ? 'registro' : 'registros'}
         </div>
       </div>
       
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Descrição
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tipo
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Valor
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Data
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {data.length > 0 ? (
-              data.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+      <div className="space-y-3 max-h-80 overflow-y-auto">
+        {data.map((item) => (
+          <div 
+            key={item.id} 
+            className="group bg-zinc-800 hover:bg-zinc-750 rounded-lg border border-zinc-700 hover:border-zinc-600 transition-all duration-200 p-4"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-2">
+                  <h4 className="font-medium text-zinc-100 truncate">
                     {item.description}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  </h4>
+                  <span className={cn(
+                    "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
+                    title.includes('Entradas') 
+                      ? "bg-green-900/30 text-green-300" 
+                      : "bg-red-900/30 text-red-300"
+                  )}>
                     {item.type}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {formatCurrency(item.amount)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.date}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <button
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-400">{item.date}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-semibold text-zinc-100">
+                      {new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      }).format(item.amount)}
+                    </span>
+                    <Button
                       onClick={() => onDelete(item.id)}
-                      className="text-red-600 hover:text-red-800 transition-colors"
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-400 hover:text-red-400 hover:bg-red-900/20 h-6 w-6 p-0"
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                  Nenhum registro encontrado
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      <div className="mt-4 pt-4 border-t border-zinc-700">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-zinc-300">Total</span>
+          <span className="text-lg font-bold text-zinc-100">
+            {new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            }).format(data.reduce((sum, item) => sum + item.amount, 0))}
+          </span>
+        </div>
       </div>
     </div>
   )
 }
 
-// Novo componente para inputs de saldo
 function BalanceInput({ label, value, onSave }: {
   label: string
   value: string
   onSave: (value: number) => void
 }) {
-  const [inputValue, setInputValue] = useState('')
-  const [displayValue, setDisplayValue] = useState('R$ 0,00')
+  const [inputValue, setInputValue] = useState(value)
+  const [isEditing, setIsEditing] = useState(false)
 
-  const formatCurrency = (value: string) => {
-    const numericValue = value.replace(/\D/g, '')
-    const floatValue = parseFloat(numericValue) / 100
-    
-    if (isNaN(floatValue)) {
-      return 'R$ 0,00'
-    }
-    
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(floatValue)
-  }
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
+  useEffect(() => {
     setInputValue(value)
-  }
+  }, [value])
 
   const handleSave = () => {
-    const numericValue = inputValue.replace(/\D/g, '')
-    const floatValue = parseFloat(numericValue) / 100
+    const numericValue = parseFloat(
+      inputValue.replace(/[^\d,]/g, '').replace(',', '.')
+    ) || 0
     
-    if (!isNaN(floatValue)) {
-      const formatted = formatCurrency(inputValue)
-      setDisplayValue(formatted)
-      onSave(floatValue)
-    }
+    onSave(numericValue)
+    setIsEditing(false)
+  }
+
+  const handleCancel = () => {
+    setInputValue(value)
+    setIsEditing(false)
   }
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg">
-      <div className="flex-1">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}
-        </label>
+    <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+      <label className="block text-sm font-medium text-zinc-300 mb-2">
+        {label}
+      </label>
+      
+      {isEditing ? (
         <div className="flex gap-2">
-          <input
-            type="text"
-            value={formatCurrency(inputValue)}
-            onChange={handleInputChange}
+          <CurrencyInput
+            value={inputValue}
+            onChange={setInputValue}
             placeholder="R$ 0,00"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
-          <button
+          <Button
             onClick={handleSave}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2"
+            size="sm"
+            className="bg-zinc-700 hover:bg-zinc-600 text-zinc-100"
           >
             <Save className="h-4 w-4" />
-            Salvar
-          </button>
+          </Button>
+          <Button
+            onClick={handleCancel}
+            variant="outline"
+            size="sm"
+            className="bg-zinc-600 hover:bg-zinc-500 border-zinc-500 text-zinc-100"
+          >
+            Cancelar
+          </Button>
         </div>
+      ) : (
+        <div 
+          className="flex items-center justify-between p-3 bg-zinc-800 rounded border border-zinc-700 cursor-pointer hover:bg-zinc-750"
+          onClick={() => setIsEditing(true)}
+        >
+          <span className="font-bold text-zinc-100">{inputValue}</span>
+          <span className="text-xs text-zinc-400">Clique para editar</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TypeSummary({ title, data, icon }: {
+  title: string
+  data: Array<{ id: string; description: string; type: string; amount: number; date: string }>
+  icon: React.ReactNode
+}) {
+  const typeTotals = data.reduce((acc, item) => {
+    if (!acc[item.type]) {
+      acc[item.type] = 0
+    }
+    acc[item.type] += item.amount
+    return acc
+  }, {} as Record<string, number>)
+
+  const sortedTypes = Object.entries(typeTotals)
+    .sort(([,a], [,b]) => b - a)
+    .filter(([,value]) => value > 0)
+
+  if (sortedTypes.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
+      <div className="flex items-center gap-3 mb-4">
+        {icon}
+        <h3 className="text-lg font-semibold text-zinc-100">{title}</h3>
       </div>
-      <div className="min-w-[120px]">
-        <span className="text-sm text-gray-500">Valor Salvo:</span>
-        <div className="text-lg font-semibold text-gray-900">
-          {displayValue}
-        </div>
+      
+      <div className="space-y-2">
+        {sortedTypes.map(([type, total]) => (
+          <div key={type} className="flex items-center justify-between p-3 bg-zinc-800 rounded border border-zinc-700">
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-zinc-300">{type}</span>
+                <span className="font-bold text-zinc-100">
+                  {new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                  }).format(total)}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
 }
 
 function Index() {
-  const [entries, setEntries] = useState<Array<{
-    id: string
-    description: string
-    type: string
-    amount: number
-    date: string
-  }>>([])
-  
-  const [exits, setExits] = useState<Array<{
-    id: string
-    description: string
-    type: string
-    amount: number
-    date: string
-  }>>([])
+  const [entries, setEntries] = useState<(EntryData & { id: string; date: string })[]>([])
+  const [exits, setExits] = useState<(ExitData & { id: string; date: string })[]>([])
+  const [saldoInicial, setSaldoInicial] = useState<number>(0)
+  const [saldoFinal, setSaldoFinal] = useState<number>(0)
+  const [aplicacaoInvestimento, setAplicacaoInvestimento] = useState<number>(0)
+  const [isLoaded, setIsLoaded] = useState(false)
 
-  // Estados para os novos campos de saldo
-  const [saldoInicial, setSaldoInicial] = useState(0)
-  const [saldoFinal, setSaldoFinal] = useState(0)
-  const [aplicacaoInvestimento, setAplicacaoInvestimento] = useState(0)
+  // Calcular totais
+  const totalEntries = entries.reduce((sum, entry) => sum + entry.amount, 0)
+  const totalExits = exits.reduce((sum, exit) => sum + exit.amount, 0)
+  const balance = totalEntries - totalExits
+
+  // Flag para controlar se os dados foram carregados
+  // Função para salvar dados no localStorage
+  const saveToLocalStorage = () => {
+    if (!isLoaded) return // Não salvar se ainda não carregou os dados
+    
+    const data = {
+      entries,
+      exits,
+      saldoInicial,
+      saldoFinal,
+      aplicacaoInvestimento,
+      lastUpdated: new Date().toISOString()
+    }
+    localStorage.setItem('fluxoCaixaData', JSON.stringify(data))
+    console.log('Dados salvos no localStorage:', data)
+  }
+
+  // Função para carregar dados do localStorage
+  const loadFromLocalStorage = () => {
+    try {
+      const savedData = localStorage.getItem('fluxoCaixaData')
+      if (savedData) {
+        const data = JSON.parse(savedData)
+        console.log('Dados carregados do localStorage:', data)
+        
+        setEntries(data.entries || [])
+        setExits(data.exits || [])
+        setSaldoInicial(data.saldoInicial || 0)
+        setSaldoFinal(data.saldoFinal || 0)
+        setAplicacaoInvestimento(data.aplicacaoInvestimento || 0)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados do localStorage:', error)
+    } finally {
+      setIsLoaded(true) // Marcar como carregado independentemente do resultado
+    }
+  }
+
+  // Carregar dados quando o componente é montado
+  useEffect(() => {
+    loadFromLocalStorage()
+  }, [])
+
+  // Salvar dados sempre que houver mudanças
+  useEffect(() => {
+    saveToLocalStorage()
+  }, [entries, exits, saldoInicial, saldoFinal, aplicacaoInvestimento, isLoaded])
 
   const handleAddEntry = (data: EntryData) => {
     const newEntry = {
-      id: Date.now().toString(),
       ...data,
+      id: Date.now().toString(),
       date: new Date().toLocaleDateString('pt-BR')
     }
     setEntries([...entries, newEntry])
@@ -457,8 +571,8 @@ function Index() {
 
   const handleAddExit = (data: ExitData) => {
     const newExit = {
-      id: Date.now().toString(),
       ...data,
+      id: Date.now().toString(),
       date: new Date().toLocaleDateString('pt-BR')
     }
     setExits([...exits, newExit])
@@ -472,11 +586,21 @@ function Index() {
     setExits(exits.filter(exit => exit.id !== id))
   }
 
+  const handleRestart = () => {
+    if (window.confirm('Tem certeza que deseja reiniciar? Todos os dados serão perdidos.')) {
+      setEntries([])
+      setExits([])
+      setSaldoInicial(0)
+      setSaldoFinal(0)
+      setAplicacaoInvestimento(0)
+      localStorage.removeItem('fluxoCaixaData')
+    }
+  }
+
   // Função para exportar para Excel
   const exportToExcel = () => {
     // Preparar dados das entradas
     const entriesData = entries.map(entry => ({
-      'Tipo': 'Entrada',
       'Descrição': entry.description,
       'Categoria': entry.type,
       'Valor': new Intl.NumberFormat('pt-BR', {
@@ -488,7 +612,6 @@ function Index() {
 
     // Preparar dados das saídas
     const exitsData = exits.map(exit => ({
-      'Tipo': 'Saída',
       'Descrição': exit.description,
       'Categoria': exit.type,
       'Valor': new Intl.NumberFormat('pt-BR', {
@@ -498,246 +621,374 @@ function Index() {
       'Data': exit.date
     }))
 
-    // Combinar todos os dados
-    const allData = [...entriesData, ...exitsData]
+    // Calcular totais por categoria para entradas
+    const entryTypeTotals = entries.reduce((acc, entry) => {
+      if (!acc[entry.type]) {
+        acc[entry.type] = 0
+      }
+      acc[entry.type] += entry.amount
+      return acc
+    }, {} as Record<string, number>)
 
-    // Adicionar linha de resumo
-    const summaryData = [
+    // Calcular totais por categoria para saídas
+    const exitTypeTotals = exits.reduce((acc, exit) => {
+      if (!acc[exit.type]) {
+        acc[exit.type] = 0
+      }
+      acc[exit.type] += exit.amount
+      return acc
+    }, {} as Record<string, number>)
+
+    // Criar workbook
+    const wb = XLSX.utils.book_new()
+
+    // Criar planilha de ENTRADAS com totais
+    const entriesWithSummary = [
+      ...entriesData,
+      {},
+      { 'Descrição': 'TOTAIS POR CATEGORIA', 'Categoria': '', 'Valor': '', 'Data': '' },
+      ...Object.entries(entryTypeTotals)
+        .sort(([,a], [,b]) => b - a)
+        .map(([type, total]) => ({
+          'Descrição': type,
+          'Categoria': '',
+          'Valor': new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          }).format(total),
+          'Data': ''
+        })),
       {},
       {
-        'Tipo': 'RESUMO',
-        'Descrição': 'Total de Entradas',
+        'Descrição': 'TOTAL GERAL DE ENTRADAS',
         'Categoria': '',
         'Valor': new Intl.NumberFormat('pt-BR', {
           style: 'currency',
           currency: 'BRL'
         }).format(totalEntries),
         'Data': ''
-      },
+      }
+    ]
+
+    const wsEntries = XLSX.utils.json_to_sheet(entriesWithSummary)
+
+    // Aplicar cor verde nas células de cabeçalho e totais
+    const entriesRange = XLSX.utils.decode_range(wsEntries['!ref'] || 'A1')
+    
+    // Colorir cabeçalho
+    for (let col = entriesRange.s.c; col <= entriesRange.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col })
+      if (!wsEntries[cellAddress]) continue
+      wsEntries[cellAddress].s = {
+        fill: { fgColor: { rgb: "22C55E" } }, // Verde
+        font: { color: { rgb: "FFFFFF" }, bold: true }
+      }
+    }
+
+    // Ajustar largura das colunas
+    wsEntries['!cols'] = [
+      { wch: 30 }, // Descrição
+      { wch: 20 }, // Categoria
+      { wch: 15 }, // Valor
+      { wch: 12 }  // Data
+    ]
+
+    // Criar planilha de SAÍDAS
+    const exitsWithSummary = [
+      ...exitsData,
+      {},
+      { 'Descrição': 'TOTAIS POR CATEGORIA', 'Categoria': '', 'Valor': '', 'Data': '' },
+      ...Object.entries(exitTypeTotals)
+        .sort(([,a], [,b]) => b - a)
+        .map(([type, total]) => ({
+          'Descrição': type,
+          'Categoria': '',
+          'Valor': new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          }).format(total),
+          'Data': ''
+        })),
+      {},
       {
-        'Tipo': 'RESUMO',
-        'Descrição': 'Total de Saídas',
+        'Descrição': 'TOTAL GERAL DE SAÍDAS',
         'Categoria': '',
         'Valor': new Intl.NumberFormat('pt-BR', {
           style: 'currency',
           currency: 'BRL'
         }).format(totalExits),
         'Data': ''
-      },
-      {
-        'Tipo': 'RESUMO',
-        'Descrição': 'Saldo Final',
-        'Categoria': '',
-        'Valor': new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(balance),
-        'Data': ''
-      },
-      {},
-      {
-        'Tipo': 'CONTROLES',
-        'Descrição': 'Saldo Inicial',
-        'Categoria': '',
-        'Valor': new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(saldoInicial),
-        'Data': ''
-      },
-      {
-        'Tipo': 'CONTROLES',
-        'Descrição': 'Saldo Final',
-        'Categoria': '',
-        'Valor': new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(saldoFinal),
-        'Data': ''
-      },
-      {
-        'Tipo': 'CONTROLES',
-        'Descrição': 'Aplicação Investimento',
-        'Categoria': '',
-        'Valor': new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(aplicacaoInvestimento),
-        'Data': ''
       }
     ]
 
-    const finalData = [...allData, ...summaryData]
+    const wsExits = XLSX.utils.json_to_sheet(exitsWithSummary)
 
-    // Criar workbook
-    const wb = XLSX.utils.book_new()
-    const ws = XLSX.utils.json_to_sheet(finalData)
+    // Aplicar cor vermelha nas células de cabeçalho e totais
+    const exitsRange = XLSX.utils.decode_range(wsExits['!ref'] || 'A1')
+    
+    // Colorir cabeçalho
+    for (let col = exitsRange.s.c; col <= exitsRange.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col })
+      if (!wsExits[cellAddress]) continue
+      wsExits[cellAddress].s = {
+        fill: { fgColor: { rgb: "EF4444" } }, // Vermelho
+        font: { color: { rgb: "FFFFFF" }, bold: true }
+      }
+    }
 
     // Ajustar largura das colunas
-    const colWidths = [
-      { wch: 15 }, // Tipo
+    wsExits['!cols'] = [
       { wch: 30 }, // Descrição
       { wch: 20 }, // Categoria
       { wch: 15 }, // Valor
       { wch: 12 }  // Data
     ]
-    ws['!cols'] = colWidths
 
-    // Adicionar worksheet ao workbook
-    XLSX.utils.book_append_sheet(wb, ws, 'Fluxo de Caixa')
+    // Criar planilha de RESUMO GERAL
+    const summaryData = [
+      {
+        'Descrição': 'Total de Entradas',
+        'Valor': new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(totalEntries)
+      },
+      {
+        'Descrição': 'Total de Saídas',
+        'Valor': new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(totalExits)
+      },
+      {
+        'Descrição': 'Saldo do Mês',
+        'Valor': new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(balance)
+      },
+      {},
+      {
+        'Descrição': 'Saldo Inicial',
+        'Valor': new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(saldoInicial)
+      },
+      {
+        'Descrição': 'Saldo Final',
+        'Valor': new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(saldoFinal)
+      },
+      {
+        'Descrição': 'Aplicação Investimento',
+        'Valor': new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(aplicacaoInvestimento)
+      }
+    ]
 
-    // Gerar nome do arquivo com data atual
-    const today = new Date()
-    const fileName = `fluxo-caixa-${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}.xlsx`
+    const wsSummary = XLSX.utils.json_to_sheet(summaryData)
 
-    // Fazer download
+    // Aplicar cor azul nas células de cabeçalho
+    const summaryRange = XLSX.utils.decode_range(wsSummary['!ref'] || 'A1')
+    
+    // Colorir cabeçalho
+    for (let col = summaryRange.s.c; col <= summaryRange.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col })
+      if (!wsSummary[cellAddress]) continue
+      wsSummary[cellAddress].s = {
+        fill: { fgColor: { rgb: "3B82F6" } }, // Azul
+        font: { color: { rgb: "FFFFFF" }, bold: true }
+      }
+    }
+
+    // Ajustar largura das colunas
+    wsSummary['!cols'] = [
+      { wch: 30 }, // Descrição
+      { wch: 20 }  // Valor
+    ]
+
+    // Adicionar planilhas ao workbook
+    XLSX.utils.book_append_sheet(wb, wsEntries, 'Entradas')
+    XLSX.utils.book_append_sheet(wb, wsExits, 'Saídas')
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo Geral')
+
+    // Salvar arquivo
+    const fileName = `fluxo-caixa-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`
     XLSX.writeFile(wb, fileName)
   }
 
-  const totalEntries = entries.reduce((sum, entry) => sum + entry.amount, 0)
-  const totalExits = exits.reduce((sum, exit) => sum + exit.amount, 0)
-  const balance = totalEntries - totalExits
-
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Controle de Fluxo de Caixa
-          </h1>
-          <p className="text-gray-600">
-            Gerencie suas entradas e saídas financeiras
-          </p>
-          
-          {/* Resumo Financeiro */}
-          <div className="flex flex-col sm:flex-row gap-4 mt-6">
-            <div className="flex-1 bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-                <span className="text-sm font-medium text-green-800">Total Entradas</span>
-              </div>
-              <p className="text-2xl font-bold text-green-600 mt-1">
-                {new Intl.NumberFormat('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL'
-                }).format(totalEntries)}
-              </p>
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      <div className="container mx-auto p-6 max-w-7xl">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-2">LUMINA</h1>
+          <p className="text-zinc-400">Controle de Fluxo de Caixa - Gerencie suas entradas e saídas financeiras</p>
+        </div>
+
+        {/* Resumo Financeiro */}
+        <div className="flex flex-row md:flex-row gap-6 mb-8">
+          <div className="bg-green-900/20 p-6 rounded-lg border border-green-800 flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <TrendingUp className="h-6 w-6 text-green-400" />
+              <h3 className="text-lg font-semibold text-green-400">Total Entradas</h3>
             </div>
-            
-            <div className="flex-1 bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                <TrendingDown className="h-5 w-5 text-red-600" />
-                <span className="text-sm font-medium text-red-800">Total Saídas</span>
-              </div>
-              <p className="text-2xl font-bold text-red-600 mt-1">
-                {new Intl.NumberFormat('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL'
-                }).format(totalExits)}
-              </p>
+            <p className="text-2xl font-bold text-zinc-100">
+              {new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+              }).format(totalEntries)}
+            </p>
+          </div>
+
+          <div className="bg-red-900/20 p-6 rounded-lg border border-red-800 flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <TrendingDown className="h-6 w-6 text-red-400" />
+              <h3 className="text-lg font-semibold text-red-400">Total Saídas</h3>
             </div>
-            
-            <div className={cn(
-              "flex-1 border rounded-lg p-4",
-              balance >= 0 
-                ? "bg-blue-50 border-blue-200" 
-                : "bg-orange-50 border-orange-200"
-            )}>
-              <div className="flex items-center gap-2">
-                <DollarSign className={cn(
-                  "h-5 w-5",
-                  balance >= 0 ? "text-blue-600" : "text-orange-600"
-                )} />
-                <span className={cn(
-                  "text-sm font-medium",
-                  balance >= 0 ? "text-blue-800" : "text-orange-800"
-                )}>Saldo</span>
-              </div>
-              <p className={cn(
-                "text-2xl font-bold mt-1",
-                balance >= 0 ? "text-blue-600" : "text-orange-600"
-              )}>
-                {new Intl.NumberFormat('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL'
-                }).format(balance)}
-              </p>
+            <p className="text-2xl font-bold text-zinc-100">
+              {new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+              }).format(totalExits)}
+            </p>
+          </div>
+
+          <div className={cn(
+            "p-6 rounded-lg border flex-1",
+            balance >= 0 
+              ? "bg-blue-900/20 border-blue-800" 
+              : "bg-orange-900/20 border-orange-800"
+          )}>
+            <div className="flex items-center gap-3 mb-2">
+              <DollarSign className={cn(
+                "h-6 w-6",
+                balance >= 0 ? "text-blue-400" : "text-orange-400"
+              )} />
+              <h3 className={cn(
+                "text-lg font-semibold",
+                balance >= 0 ? "text-blue-400" : "text-orange-400"
+              )}>Saldo do Mês</h3>
             </div>
+            <p className="text-2xl font-bold text-zinc-100">
+              {new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+              }).format(balance)}
+            </p>
           </div>
         </div>
 
-        {/* Layout Principal com Flexbox - Duas Colunas */}
-        <div className="flex flex-row gap-8">
-          {/* Coluna Esquerda - ENTRADAS */}
-          <div className="flex-1 flex flex-col">
+        {/* Formulários e Listas */}
+        <div className="flex flex-row lg:flex-row gap-8 mb-8">
+          {/* Coluna de Entradas */}
+          <div className="flex-1 space-y-6">
             <CashFlowForm
-              title="Entrada de Caixa"
-              icon={<TrendingUp className="h-6 w-6 text-green-600" />}
+              title="Entradas"
+              icon={<TrendingUp className="h-6 w-6 text-green-400" />}
               types={entryTypes}
               onSubmit={handleAddEntry}
               schema={entrySchema}
             />
             
             <CashFlowTable
-              title="Histórico de Entradas"
+              title="Entradas Registradas"
               data={entries}
               onDelete={handleDeleteEntry}
             />
           </div>
-
-          {/* Coluna Direita - SAÍDAS */}
-          <div className="flex-1 flex flex-col">
+          
+          {/* Coluna de Saídas */}
+          <div className="flex-1 space-y-6">
             <CashFlowForm
-              title="Saída de Caixa"
-              icon={<TrendingDown className="h-6 w-6 text-red-600" />}
+              title="Saídas"
+              icon={<TrendingDown className="h-6 w-6 text-red-400" />}
               types={exitTypes}
               onSubmit={handleAddExit}
               schema={exitSchema}
             />
             
             <CashFlowTable
-              title="Histórico de Saídas"
+              title="Saídas Registradas"
               data={exits}
               onDelete={handleDeleteExit}
             />
           </div>
         </div>
 
-        {/* Novos Inputs de Saldo */}
-        <div className="mt-8 space-y-4">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Controles de Saldo
-          </h2>
-          
-          <BalanceInput
-            label="Saldo Inicial"
-            value={saldoInicial.toString()}
-            onSave={setSaldoInicial}
-          />
+        {/* Campos de Saldo */}
+        <div className="flex flex-col md:flex-row gap-6 mb-8">
+          <div className="flex-1">
+            <BalanceInput
+              label="Saldo Inicial"
+              value={new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+              }).format(saldoInicial)}
+              onSave={setSaldoInicial}
+            />
+          </div>
           
           <BalanceInput
             label="Saldo Final"
-            value={saldoFinal.toString()}
+            value={new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            }).format(saldoFinal)}
             onSave={setSaldoFinal}
           />
           
           <BalanceInput
             label="Aplicação Investimento"
-            value={aplicacaoInvestimento.toString()}
+            value={new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            }).format(aplicacaoInvestimento)}
             onSave={setAplicacaoInvestimento}
           />
         </div>
 
-        {/* Botão de Exportação para Excel */}
-        <div className="mt-8 flex justify-center">
-          <button
+        {/* Resumos por Categoria */}
+        <div className="flex flex-col lg:flex-row gap-8 mb-8">
+          <div className="flex-1">
+            <TypeSummary
+              title="Resumo de Entradas por Categoria"
+              data={entries}
+              icon={<TrendingUp className="h-5 w-5 text-green-400" />}
+            />
+          </div>
+          
+          <div className="flex-1">
+            <TypeSummary
+              title="Resumo de Saídas por Categoria"
+              data={exits}
+              icon={<TrendingDown className="h-5 w-5 text-red-400" />}
+            />
+          </div>
+        </div>
+
+        {/* Botões de Ação */}
+        <div className="flex flex-wrap gap-4 justify-center">
+          <Button
             onClick={exportToExcel}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center gap-3 text-lg font-medium shadow-lg"
+            size="lg"
+            className="text-lg font-medium shadow-lg bg-green-700 hover:bg-green-600 text-zinc-50 border border-green-500"
           >
-            <Download className="h-5 w-5" />
+            <Download className="h-5 w-5 mr-2" />
             Exportar para Excel
-          </button>
+          </Button>
+
+          <Button
+            onClick={handleRestart}
+            variant="destructive"
+            className="text-lg font-medium shadow-lg bg-red-800 hover:bg-red-700 text-zinc-50 border border-red-600"
+          >
+            Restart
+          </Button>
         </div>
       </div>
     </div>
