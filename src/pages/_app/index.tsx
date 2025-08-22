@@ -2,8 +2,10 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import { z } from 'zod'
 import { cn } from '@/lib/utils'
-import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Save, Download } from 'lucide-react'
+import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Save, Download, FileText } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, AlignmentType, WidthType, BorderStyle } from 'docx'
+import { saveAs } from 'file-saver'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -822,6 +824,370 @@ function Index() {
     XLSX.writeFile(wb, fileName)
   }
 
+  // Função para exportar para DOCX
+  const exportToDocx = async () => {
+    // Calcular totais por categoria para entradas
+    const entryTypeTotals = entries.reduce((acc, entry) => {
+      if (!acc[entry.type]) {
+        acc[entry.type] = 0
+      }
+      acc[entry.type] += entry.amount
+      return acc
+    }, {} as Record<string, number>)
+
+    // Calcular totais por categoria para saídas
+    const exitTypeTotals = exits.reduce((acc, exit) => {
+      if (!acc[exit.type]) {
+        acc[exit.type] = 0
+      }
+      acc[exit.type] += exit.amount
+      return acc
+    }, {} as Record<string, number>)
+
+    // Criar documento
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: [
+          // Título
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "PRESTAÇÃO DE CONTAS MÊS DE JUNHO DE 2025",
+                bold: true,
+                size: 28,
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 400 },
+          }),
+
+          // Seção ENTRADAS
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "ENTRADAS",
+                bold: true,
+                size: 24,
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 200, after: 200 },
+          }),
+
+          // Tabela de Entradas
+          new Table({
+            width: {
+              size: 100,
+              type: WidthType.PERCENTAGE,
+            },
+            borders: {
+              top: { style: BorderStyle.SINGLE, size: 1 },
+              bottom: { style: BorderStyle.SINGLE, size: 1 },
+              left: { style: BorderStyle.SINGLE, size: 1 },
+              right: { style: BorderStyle.SINGLE, size: 1 },
+              insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+              insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+            },
+            rows: [
+              ...Object.entries(entryTypeTotals)
+                .sort(([,a], [,b]) => b - a)
+                .map(([type, total]) => 
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({ children: [new TextRun({ text: type.toUpperCase(), bold: true })] })],
+                        width: { size: 70, type: WidthType.PERCENTAGE },
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ 
+                          children: [new TextRun({ 
+                            text: new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            }).format(total),
+                            bold: true 
+                          })],
+                          alignment: AlignmentType.RIGHT
+                        })],
+                        width: { size: 30, type: WidthType.PERCENTAGE },
+                      }),
+                    ],
+                  })
+                ),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph({ children: [new TextRun({ text: "TOTAL", bold: true })] })],
+                    width: { size: 70, type: WidthType.PERCENTAGE },
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({ 
+                      children: [new TextRun({ 
+                        text: new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        }).format(totalEntries),
+                        bold: true 
+                      })],
+                      alignment: AlignmentType.RIGHT
+                    })],
+                    width: { size: 30, type: WidthType.PERCENTAGE },
+                  }),
+                ],
+              }),
+            ],
+          }),
+
+          // Seção SAÍDAS
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "SAÍDAS",
+                bold: true,
+                size: 24,
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 400, after: 200 },
+          }),
+
+          // Tabela de Saídas
+          new Table({
+            width: {
+              size: 100,
+              type: WidthType.PERCENTAGE,
+            },
+            borders: {
+              top: { style: BorderStyle.SINGLE, size: 1 },
+              bottom: { style: BorderStyle.SINGLE, size: 1 },
+              left: { style: BorderStyle.SINGLE, size: 1 },
+              right: { style: BorderStyle.SINGLE, size: 1 },
+              insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+              insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+            },
+            rows: [
+              ...Object.entries(exitTypeTotals)
+                .sort(([,a], [,b]) => b - a)
+                .map(([type, total]) => 
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({ children: [new TextRun({ text: type.toUpperCase(), bold: true })] })],
+                        width: { size: 70, type: WidthType.PERCENTAGE },
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ 
+                          children: [new TextRun({ 
+                            text: new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            }).format(total),
+                            bold: true 
+                          })],
+                          alignment: AlignmentType.RIGHT
+                        })],
+                        width: { size: 30, type: WidthType.PERCENTAGE },
+                      }),
+                    ],
+                  })
+                ),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph({ children: [new TextRun({ text: "TOTAL", bold: true })] })],
+                    width: { size: 70, type: WidthType.PERCENTAGE },
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({ 
+                      children: [new TextRun({ 
+                        text: new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        }).format(totalExits),
+                        bold: true 
+                      })],
+                      alignment: AlignmentType.RIGHT
+                    })],
+                    width: { size: 30, type: WidthType.PERCENTAGE },
+                  }),
+                ],
+              }),
+            ],
+          }),
+
+          // Saldo do Mês
+          new Table({
+            width: {
+              size: 100,
+              type: WidthType.PERCENTAGE,
+            },
+            borders: {
+              top: { style: BorderStyle.SINGLE, size: 1 },
+              bottom: { style: BorderStyle.SINGLE, size: 1 },
+              left: { style: BorderStyle.SINGLE, size: 1 },
+              right: { style: BorderStyle.SINGLE, size: 1 },
+              insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+              insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+            },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph({ children: [new TextRun({ text: "SALDO DO MÊS", bold: true })] })],
+                    width: { size: 70, type: WidthType.PERCENTAGE },
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({ 
+                      children: [new TextRun({ 
+                        text: new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        }).format(balance),
+                        bold: true 
+                      })],
+                      alignment: AlignmentType.RIGHT
+                    })],
+                    width: { size: 30, type: WidthType.PERCENTAGE },
+                  }),
+                ],
+              }),
+            ],
+          }),
+
+          // Seção SALDO DISPONÍVEL
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "SALDO DISPONÍVEL",
+                bold: true,
+                size: 24,
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 400, after: 200 },
+          }),
+
+          // Tabela Saldo Disponível
+          new Table({
+            width: {
+              size: 100,
+              type: WidthType.PERCENTAGE,
+            },
+            borders: {
+              top: { style: BorderStyle.SINGLE, size: 1 },
+              bottom: { style: BorderStyle.SINGLE, size: 1 },
+              left: { style: BorderStyle.SINGLE, size: 1 },
+              right: { style: BorderStyle.SINGLE, size: 1 },
+              insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+              insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+            },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph({ children: [new TextRun({ text: "SALDO INICIAL (01/06/2025)", bold: true })] })],
+                    width: { size: 70, type: WidthType.PERCENTAGE },
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({ 
+                      children: [new TextRun({ 
+                        text: new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        }).format(saldoInicial),
+                        bold: true 
+                      })],
+                      alignment: AlignmentType.RIGHT
+                    })],
+                    width: { size: 30, type: WidthType.PERCENTAGE },
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph({ children: [new TextRun({ text: "SALDO FINAL (30/06/2025)", bold: true })] })],
+                    width: { size: 70, type: WidthType.PERCENTAGE },
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({ 
+                      children: [new TextRun({ 
+                        text: new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        }).format(saldoFinal),
+                        bold: true 
+                      })],
+                      alignment: AlignmentType.RIGHT
+                    })],
+                    width: { size: 30, type: WidthType.PERCENTAGE },
+                  }),
+                ],
+              }),
+            ],
+          }),
+
+          // Seção FUNDOS DE INVESTIMENTO
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "FUNDOS DE INVESTIMENTO",
+                bold: true,
+                size: 24,
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 400, after: 200 },
+          }),
+
+          // Tabela Fundos de Investimento
+          new Table({
+            width: {
+              size: 100,
+              type: WidthType.PERCENTAGE,
+            },
+            borders: {
+              top: { style: BorderStyle.SINGLE, size: 1 },
+              bottom: { style: BorderStyle.SINGLE, size: 1 },
+              left: { style: BorderStyle.SINGLE, size: 1 },
+              right: { style: BorderStyle.SINGLE, size: 1 },
+              insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+              insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+            },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph({ children: [new TextRun({ text: "APLICAÇÃO", bold: true })] })],
+                    width: { size: 70, type: WidthType.PERCENTAGE },
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({ 
+                      children: [new TextRun({ 
+                        text: new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        }).format(aplicacaoInvestimento),
+                        bold: true 
+                      })],
+                      alignment: AlignmentType.RIGHT
+                    })],
+                    width: { size: 30, type: WidthType.PERCENTAGE },
+                  }),
+                ],
+              }),
+            ],
+          }),
+        ],
+      }],
+    })
+
+    // Gerar e baixar o arquivo
+    const blob = await Packer.toBlob(doc)
+    saveAs(blob, `prestacao-contas-${new Date().toISOString().slice(0, 7)}.docx`)
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <div className="container mx-auto p-6 max-w-7xl">
@@ -980,6 +1346,15 @@ function Index() {
           >
             <Download className="h-5 w-5 mr-2" />
             Exportar para Excel
+          </Button>
+
+          <Button
+            onClick={exportToDocx}
+            size="lg"
+            className="text-lg font-medium shadow-lg bg-blue-700 hover:bg-blue-600 text-zinc-50 border border-blue-500"
+          >
+            <FileText className="h-5 w-5 mr-2" />
+            Exportar para DOCX
           </Button>
 
           <Button
