@@ -252,7 +252,7 @@ function Index() {
       const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col })
       if (!wsEntries[cellAddress]) continue
       wsEntries[cellAddress].s = {
-        fill: { fgColor: { rgb: "22C55E" } }, // Verde
+        fill: { fgColor: "22C55E" }, // Verde
         font: { color: { rgb: "FFFFFF" }, bold: true }
       }
     }
@@ -303,7 +303,7 @@ function Index() {
       const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col })
       if (!wsExits[cellAddress]) continue
       wsExits[cellAddress].s = {
-        fill: { fgColor: { rgb: "EF4444" } }, // Vermelho
+        fill: { fgColor: "EF4444" }, // Vermelho
         font: { color: { rgb: "FFFFFF" }, bold: true }
       }
     }
@@ -373,7 +373,7 @@ function Index() {
       const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col })
       if (!wsSummary[cellAddress]) continue
       wsSummary[cellAddress].s = {
-        fill: { fgColor: { rgb: "3B82F6" } }, // Azul
+        fill: { fgColor: "3B82F6" }, // Azul
         font: { color: { rgb: "FFFFFF" }, bold: true }
       }
     }
@@ -417,7 +417,16 @@ function Index() {
     // Criar documento
     const doc = new Document({
       sections: [{
-        properties: {},
+        properties: {
+          page: {
+            margin: {
+              top: 720,
+              right: 720,
+              bottom: 720,
+              left: 720,
+            },
+          },
+        },
         children: [
           // Título
           new Paragraph({
@@ -426,6 +435,7 @@ function Index() {
                 text: "PRESTAÇÃO DE CONTAS MÊS DE JUNHO DE 2025",
                 bold: true,
                 size: 28,
+                font: "Arial",
               }),
             ],
             alignment: AlignmentType.CENTER,
@@ -439,6 +449,7 @@ function Index() {
                 text: "ENTRADAS",
                 bold: true,
                 size: 24,
+                font: "Arial",
               }),
             ],
             alignment: AlignmentType.CENTER,
@@ -466,8 +477,14 @@ function Index() {
                   new TableRow({
                     children: [
                       new TableCell({
-                        children: [new Paragraph({ children: [new TextRun({ text: type.toUpperCase(), bold: true })] })],
+                        children: [new Paragraph({ children: [new TextRun({ text: type.toUpperCase(), bold: true, font: "Arial" })] })],
                         width: { size: 70, type: WidthType.PERCENTAGE },
+                        margins: {
+                          top: 100,
+                          bottom: 100,
+                          left: 100,
+                          right: 100,
+                        },
                       }),
                       new TableCell({
                         children: [new Paragraph({ 
@@ -476,11 +493,18 @@ function Index() {
                               style: 'currency',
                               currency: 'BRL'
                             }).format(total),
-                            bold: true 
+                            bold: true,
+                            font: "Arial"
                           })],
                           alignment: AlignmentType.RIGHT
                         })],
                         width: { size: 30, type: WidthType.PERCENTAGE },
+                        margins: {
+                          top: 100,
+                          bottom: 100,
+                          left: 100,
+                          right: 100,
+                        },
                       }),
                     ],
                   })
@@ -488,8 +512,14 @@ function Index() {
               new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "TOTAL", bold: true })] })],
+                    children: [new Paragraph({ children: [new TextRun({ text: "TOTAL", bold: true, font: "Arial" })] })],
                     width: { size: 70, type: WidthType.PERCENTAGE },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 100,
+                      right: 100,
+                    },
                   }),
                   new TableCell({
                     children: [new Paragraph({ 
@@ -498,11 +528,18 @@ function Index() {
                           style: 'currency',
                           currency: 'BRL'
                         }).format(totalEntries),
-                        bold: true 
+                        bold: true,
+                        font: "Arial"
                       })],
                       alignment: AlignmentType.RIGHT
                     })],
                     width: { size: 30, type: WidthType.PERCENTAGE },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 100,
+                      right: 100,
+                    },
                   }),
                 ],
               }),
@@ -516,6 +553,7 @@ function Index() {
                 text: "SAÍDAS",
                 bold: true,
                 size: 24,
+                font: "Arial",
               }),
             ],
             alignment: AlignmentType.CENTER,
@@ -543,8 +581,14 @@ function Index() {
                   new TableRow({
                     children: [
                       new TableCell({
-                        children: [new Paragraph({ children: [new TextRun({ text: type.toUpperCase(), bold: true })] })],
+                        children: [new Paragraph({ children: [new TextRun({ text: type.toUpperCase(), bold: true, font: "Arial" })] })],
                         width: { size: 70, type: WidthType.PERCENTAGE },
+                        margins: {
+                          top: 100,
+                          bottom: 100,
+                          left: 100,
+                          right: 100,
+                        },
                       }),
                       new TableCell({
                         children: [new Paragraph({ 
@@ -553,11 +597,18 @@ function Index() {
                               style: 'currency',
                               currency: 'BRL'
                             }).format(total),
-                            bold: true 
+                            bold: true,
+                            font: "Arial"
                           })],
                           alignment: AlignmentType.RIGHT
                         })],
                         width: { size: 30, type: WidthType.PERCENTAGE },
+                        margins: {
+                          top: 100,
+                          bottom: 100,
+                          left: 100,
+                          right: 100,
+                        },
                       }),
                     ],
                   })
@@ -565,8 +616,14 @@ function Index() {
               new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "TOTAL", bold: true })] })],
+                    children: [new Paragraph({ children: [new TextRun({ text: "TOTAL", bold: true, font: "Arial" })] })],
                     width: { size: 70, type: WidthType.PERCENTAGE },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 100,
+                      right: 100,
+                    },
                   }),
                   new TableCell({
                     children: [new Paragraph({ 
@@ -575,15 +632,36 @@ function Index() {
                           style: 'currency',
                           currency: 'BRL'
                         }).format(totalExits),
-                        bold: true 
+                        bold: true,
+                        font: "Arial"
                       })],
                       alignment: AlignmentType.RIGHT
                     })],
                     width: { size: 30, type: WidthType.PERCENTAGE },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 100,
+                      right: 100,
+                    },
                   }),
                 ],
               }),
             ],
+          }),
+
+          // Seção SALDO DO MES
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "SALDO DO MÊS",
+                bold: true,
+                size: 24,
+                font: "Arial",
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 400, after: 200 },
           }),
 
           // Saldo do Mês
@@ -604,8 +682,14 @@ function Index() {
               new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "SALDO DO MÊS", bold: true })] })],
+                    children: [new Paragraph({ children: [new TextRun({ text: "SALDO DO MÊS", bold: true, font: "Arial" })] })],
                     width: { size: 70, type: WidthType.PERCENTAGE },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 100,
+                      right: 100,
+                    },
                   }),
                   new TableCell({
                     children: [new Paragraph({ 
@@ -614,11 +698,18 @@ function Index() {
                           style: 'currency',
                           currency: 'BRL'
                         }).format(balance),
-                        bold: true 
+                        bold: true,
+                        font: "Arial"
                       })],
                       alignment: AlignmentType.RIGHT
                     })],
                     width: { size: 30, type: WidthType.PERCENTAGE },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 100,
+                      right: 100,
+                    },
                   }),
                 ],
               }),
@@ -632,6 +723,7 @@ function Index() {
                 text: "SALDO DISPONÍVEL",
                 bold: true,
                 size: 24,
+                font: "Arial",
               }),
             ],
             alignment: AlignmentType.CENTER,
@@ -656,8 +748,14 @@ function Index() {
               new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "SALDO INICIAL (01/06/2025)", bold: true })] })],
+                    children: [new Paragraph({ children: [new TextRun({ text: "SALDO INICIAL (01/06/2025)", bold: true, font: "Arial" })] })],
                     width: { size: 70, type: WidthType.PERCENTAGE },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 100,
+                      right: 100,
+                    },
                   }),
                   new TableCell({
                     children: [new Paragraph({ 
@@ -666,19 +764,32 @@ function Index() {
                           style: 'currency',
                           currency: 'BRL'
                         }).format(saldoInicial),
-                        bold: true 
+                        bold: true,
+                        font: "Arial"
                       })],
                       alignment: AlignmentType.RIGHT
                     })],
                     width: { size: 30, type: WidthType.PERCENTAGE },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 100,
+                      right: 100,
+                    },
                   }),
                 ],
               }),
               new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "SALDO FINAL (30/06/2025)", bold: true })] })],
+                    children: [new Paragraph({ children: [new TextRun({ text: "SALDO FINAL (30/06/2025)", bold: true, font: "Arial" })] })],
                     width: { size: 70, type: WidthType.PERCENTAGE },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 100,
+                      right: 100,
+                    },
                   }),
                   new TableCell({
                     children: [new Paragraph({ 
@@ -687,11 +798,18 @@ function Index() {
                           style: 'currency',
                           currency: 'BRL'
                         }).format(saldoFinal),
-                        bold: true 
+                        bold: true,
+                        font: "Arial"
                       })],
                       alignment: AlignmentType.RIGHT
                     })],
                     width: { size: 30, type: WidthType.PERCENTAGE },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 100,
+                      right: 100,
+                    },
                   }),
                 ],
               }),
@@ -705,6 +823,7 @@ function Index() {
                 text: "FUNDOS DE INVESTIMENTO",
                 bold: true,
                 size: 24,
+                font: "Arial",
               }),
             ],
             alignment: AlignmentType.CENTER,
@@ -729,8 +848,14 @@ function Index() {
               new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "APLICAÇÃO", bold: true })] })],
+                    children: [new Paragraph({ children: [new TextRun({ text: "APLICAÇÃO", bold: true, font: "Arial" })] })],
                     width: { size: 70, type: WidthType.PERCENTAGE },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 100,
+                      right: 100,
+                    },
                   }),
                   new TableCell({
                     children: [new Paragraph({ 
@@ -739,11 +864,18 @@ function Index() {
                           style: 'currency',
                           currency: 'BRL'
                         }).format(aplicacaoInvestimento),
-                        bold: true 
+                        bold: true,
+                        font: "Arial"
                       })],
                       alignment: AlignmentType.RIGHT
                     })],
                     width: { size: 30, type: WidthType.PERCENTAGE },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 100,
+                      right: 100,
+                    },
                   }),
                 ],
               }),
@@ -762,7 +894,7 @@ function Index() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <div className="container mx-auto p-6 max-w-7xl">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">LUMINA</h1>
+          <h1 className="text-4xl font-bold mb-2 font-poppins tracking-widest">LUMINA</h1>
           <p className="text-zinc-400">Controle de Fluxo de Caixa - Gerencie suas entradas e saídas financeiras</p>
         </div>
 
