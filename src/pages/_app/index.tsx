@@ -479,7 +479,7 @@ function Index() {
           new Paragraph({
             children: [
               new TextRun({
-                text: `PRESTAÇÃO DE CONTAS MÊS DE ${mesAtual} DE ${anoAtual}`,
+                text: `PRESTAÇÃO DE CONTAS MÊS DE ${mesAtual.toUpperCase()} DE ${anoAtual}`,
                 bold: true,
                 size: 28,
                 font: "Arial",
@@ -701,7 +701,7 @@ function Index() {
           new Paragraph({
             children: [
               new TextRun({
-                text: "SALDO DO MÊS",
+                text: "", // titulo da sessao caso houver
                 bold: true,
                 size: 24,
                 font: "Arial",
@@ -729,7 +729,7 @@ function Index() {
               new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "", bold: true, font: "Arial" })] })],
+                    children: [new Paragraph({ children: [new TextRun({ text: "SALDO DO MÊS", bold: true, font: "Arial" })] })],
                     width: { size: 70, type: WidthType.PERCENTAGE },
                     margins: {
                       top: 100,

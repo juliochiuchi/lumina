@@ -8,7 +8,7 @@ interface FinancialSummaryProps {
 
 export function FinancialSummary({ totalEntries, totalExits, balance }: FinancialSummaryProps) {
   return (
-    <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6 sm:mb-8">
+    <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 mb-6 sm:mb-8">
       <div className="bg-zinc-900 p-4 sm:p-6 rounded-lg border border-zinc-800 flex-1">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-green-900/20 rounded-lg flex-shrink-0">
