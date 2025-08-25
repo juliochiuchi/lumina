@@ -67,7 +67,7 @@ export function CashFlowForm({ title, titleNotification, icon, types, onSubmit, 
         const newErrors: Record<string, string> = {}
         const errorMessages: string[] = []
         
-        error.errors.forEach((err) => {
+        error.issues.forEach((err: z.ZodIssue) => {
           if (err.path[0]) {
             newErrors[err.path[0] as string] = err.message
             errorMessages.push(err.message)

@@ -50,7 +50,7 @@ export function CashFlowTable({ title, data, onDelete }: CashFlowTableProps) {
       
       <div className="max-h-96 overflow-y-auto">
         <div className="p-4 space-y-3">
-          {data.map((item, index) => (
+          {data.map((item) => (
             <div 
               key={item.id} 
               className="group relative bg-zinc-800/30 hover:bg-zinc-800/50 rounded-lg p-4 border border-zinc-700/50 hover:border-zinc-600/50 transition-all duration-200"
