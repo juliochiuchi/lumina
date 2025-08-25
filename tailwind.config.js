@@ -107,13 +107,11 @@ module.exports = {
   		}
   	},
   	screens: {
-  		ultrawide: '3440px',
-  		desktop4k: '2560px',
-  		desktop: '2000px',
-  		laptopLg: '1920px',
-  		laptopMd: '1100px',
-  		tablet: '768px',
-  		phone: '320px'
+  		"2xl": '1536px',
+  		xl: '1280px',
+  		lg: '1024px',
+  		md: '768px',
+  		sm: '320px'
   	}
   },
   plugins: [require("tailwindcss-animate")],

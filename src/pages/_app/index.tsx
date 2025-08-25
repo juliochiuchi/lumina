@@ -939,16 +939,17 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="container mx-auto p-6 max-w-7xl">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2 font-poppins tracking-widest">LUMINA</h1>
-          <p className="text-zinc-400">Controle de Fluxo de Caixa - Gerencie suas entradas e saídas financeiras</p>
+      <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-4xl font-bold mb-2 font-poppins tracking-widest">LUMINA</h1>
+          <p className="text-zinc-400 text-sm sm:text-base">Controle de Fluxo de Caixa - Gerencie suas entradas e saídas financeiras</p>
         </div>
 
         <FinancialSummary totalEntries={totalEntries} totalExits={totalExits} balance={balance} />
 
-        <div className="flex flex-row lg:flex-col gap-8 mb-8 w-full">
-          <div className="space-y-6 w-full">
+        {/* Formulários e tabelas - lado a lado em telas grandes, empilhados em pequenas */}
+        <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 mb-6 sm:mb-8 w-full">
+          <div className="flex-1 space-y-6">
             <CashFlowForm
               title="Adicionar Entrada"
               titleNotification="Entrada"
@@ -960,7 +961,7 @@ function Index() {
             <CashFlowTable title="Entradas Registradas" data={entries} onDelete={handleDeleteEntry} />
           </div>
 
-          <div className="space-y-6 w-full">
+          <div className="flex-1 space-y-6">
             <CashFlowForm
               title="Adicionar Saída"
               titleNotification="Saída"
@@ -973,7 +974,8 @@ function Index() {
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6 mb-8">
+        {/* Saldos - sempre empilhados conforme solicitado */}
+        <div className="flex flex-col gap-4 sm:gap-6 mb-6 sm:mb-8">
           <BalanceInput
             label="Saldo Inicial"
             value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldoInicial)}
@@ -991,17 +993,22 @@ function Index() {
           />
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6 mb-8">
-          <TypeSummary
-            title="Resumo de Entradas por Categoria"
-            data={entries}
-            icon={<TrendingUp className="h-5 w-5 text-green-400" />}
-          />
-          <TypeSummary
-            title="Resumo de Saídas por Categoria"
-            data={exits}
-            icon={<TrendingDown className="h-5 w-5 text-red-400" />}
-          />
+        {/* Resumos por categoria - lado a lado em telas grandes, empilhados em pequenas */}
+        <div className="flex flex-col lg:flex-row gap-6 mb-6 sm:mb-8">
+          <div className="flex-1">
+            <TypeSummary
+              title="Resumo de Entradas por Categoria"
+              data={entries}
+              icon={<TrendingUp className="h-5 w-5 text-green-400" />}
+            />
+          </div>
+          <div className="flex-1">
+            <TypeSummary
+              title="Resumo de Saídas por Categoria"
+              data={exits}
+              icon={<TrendingDown className="h-5 w-5 text-red-400" />}
+            />
+          </div>
         </div>
 
         <ExportButtons
