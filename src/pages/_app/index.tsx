@@ -78,6 +78,58 @@ function Index() {
   const [saldoFinal, setSaldoFinal] = useState<number>(0)
   const [aplicacaoInvestimento, setAplicacaoInvestimento] = useState<number>(0)
   const [isLoaded, setIsLoaded] = useState(false)
+  
+  // Estados para o mês e ano atual
+  const [mesAtual, setMesAtual] = useState<string>('')
+  const [anoAtual, setAnoAtual] = useState<number>(0)
+
+  // Array com os nomes dos meses em português
+  const nomesMeses = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ]
+
+  // Função para obter o mês e ano atual
+  const obterMesEAnoAtual = () => {
+    const hoje = new Date()
+    const indiceMes = hoje.getMonth() // 0-11
+    const ano = hoje.getFullYear()
+    
+    setMesAtual(nomesMeses[indiceMes])
+    setAnoAtual(ano)
+  }
+
+  // Estados para primeiro e último dia do mês atual
+  const [primeiroDiaDoMes, setPrimeiroDiaDoMes] = useState<string>('')
+  const [ultimoDiaDoMes, setUltimoDiaDoMes] = useState<string>('')
+
+  // Função para formatar data no formato DD/MM/YYYY
+  const formatarData = (data: Date): string => {
+    const dia = data.getDate().toString().padStart(2, '0')
+    const mes = (data.getMonth() + 1).toString().padStart(2, '0')
+    const ano = data.getFullYear()
+    return `${dia}/${mes}/${ano}`
+  }
+
+  // Função para calcular primeiro e último dia do mês atual
+  const calcularDatasDoMes = () => {
+    const hoje = new Date()
+    
+    // Primeiro dia do mês atual
+    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+    
+    // Último dia do mês atual
+    const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
+    
+    setPrimeiroDiaDoMes(formatarData(primeiroDia))
+    setUltimoDiaDoMes(formatarData(ultimoDia))
+  }
+
+  useEffect(() => {
+    calcularDatasDoMes() // calcular as datas quando o componente é montado
+    obterMesEAnoAtual() // obter mês e ano quando o componente é montado
+    loadFromLocalStorage() // carregar dados quando o componente é montado
+  }, [])
 
   // Calcular totais
   const totalEntries = entries.reduce((sum, entry) => sum + entry.amount, 0)
@@ -121,11 +173,6 @@ function Index() {
       setIsLoaded(true) // Marcar como carregado independentemente do resultado
     }
   }
-
-  // Carregar dados quando o componente é montado
-  useEffect(() => {
-    loadFromLocalStorage()
-  }, [])
 
   // Salvar dados sempre que houver mudanças
   useEffect(() => {
@@ -432,7 +479,7 @@ function Index() {
           new Paragraph({
             children: [
               new TextRun({
-                text: "PRESTAÇÃO DE CONTAS MÊS DE JUNHO DE 2025",
+                text: `PRESTAÇÃO DE CONTAS MÊS DE ${mesAtual} DE ${anoAtual}`,
                 bold: true,
                 size: 28,
                 font: "Arial",
@@ -682,7 +729,7 @@ function Index() {
               new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "SALDO DO MÊS", bold: true, font: "Arial" })] })],
+                    children: [new Paragraph({ children: [new TextRun({ text: "", bold: true, font: "Arial" })] })],
                     width: { size: 70, type: WidthType.PERCENTAGE },
                     margins: {
                       top: 100,
@@ -748,7 +795,7 @@ function Index() {
               new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "SALDO INICIAL (01/06/2025)", bold: true, font: "Arial" })] })],
+                    children: [new Paragraph({ children: [new TextRun({ text: `SALDO INICIAL (${primeiroDiaDoMes})`, bold: true, font: "Arial" })] })],
                     width: { size: 70, type: WidthType.PERCENTAGE },
                     margins: {
                       top: 100,
@@ -782,7 +829,7 @@ function Index() {
               new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "SALDO FINAL (30/06/2025)", bold: true, font: "Arial" })] })],
+                    children: [new Paragraph({ children: [new TextRun({ text: `SALDO FINAL (${ultimoDiaDoMes})`, bold: true, font: "Arial" })] })],
                     width: { size: 70, type: WidthType.PERCENTAGE },
                     margins: {
                       top: 100,
@@ -904,6 +951,7 @@ function Index() {
           <div className="space-y-6 w-full">
             <CashFlowForm
               title="Adicionar Entrada"
+              titleNotification="Entrada"
               icon={<TrendingUp className="h-5 w-5 text-green-400" />}
               types={entryTypes}
               onSubmit={handleAddEntry}
@@ -915,6 +963,7 @@ function Index() {
           <div className="space-y-6 w-full">
             <CashFlowForm
               title="Adicionar Saída"
+              titleNotification="Saída"
               icon={<TrendingDown className="h-5 w-5 text-red-400" />}
               types={exitTypes}
               onSubmit={handleAddExit}

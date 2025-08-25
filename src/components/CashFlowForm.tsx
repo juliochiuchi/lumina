@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { z } from 'zod'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -12,13 +13,17 @@ interface CashFlowFormProps {
   types: string[]
   onSubmit: (data: any) => void
   schema: z.ZodSchema
+  titleNotification: string
 }
 
-export function CashFlowForm({ title, icon, types, onSubmit, schema }: CashFlowFormProps) {
+export function CashFlowForm({ title, titleNotification, icon, types, onSubmit, schema }: CashFlowFormProps) {
   const [description, setDescription] = useState('')
   const [type, setType] = useState('')
   const [amount, setAmount] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  
+  // Ref para o campo de descrição
+  const descriptionInputRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,20 +43,50 @@ export function CashFlowForm({ title, icon, types, onSubmit, schema }: CashFlowF
       const validatedData = schema.parse(formData)
       onSubmit(validatedData)
       
+      // Notificação de sucesso
+      toast.success(`${titleNotification} adicionada com sucesso!`, {
+        description: `${description} - ${new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(numericAmount)}`,
+        duration: 3000,
+      })
+      
       // Limpar formulário
       setDescription('')
       setType('')
       setAmount('')
       setErrors({})
+      
+      // Focar no campo descrição após adicionar com sucesso
+      setTimeout(() => {
+        descriptionInputRef.current?.focus()
+      }, 0)
     } catch (error) {
       if (error instanceof z.ZodError) {
         const newErrors: Record<string, string> = {}
+        const errorMessages: string[] = []
+        
         error.errors.forEach((err) => {
           if (err.path[0]) {
             newErrors[err.path[0] as string] = err.message
+            errorMessages.push(err.message)
           }
         })
+        
         setErrors(newErrors)
+        
+        // Notificação de erro
+        toast.error('Erro ao adicionar entrada', {
+          description: errorMessages.join(', '),
+          duration: 4000,
+        })
+      } else {
+        // Erro genérico
+        toast.error('Erro inesperado', {
+          description: 'Ocorreu um erro ao processar a solicitação.',
+          duration: 4000,
+        })
       }
     }
   }
@@ -69,6 +104,7 @@ export function CashFlowForm({ title, icon, types, onSubmit, schema }: CashFlowF
             Descrição
           </label>
           <Input
+            ref={descriptionInputRef}
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
