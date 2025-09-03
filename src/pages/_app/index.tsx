@@ -75,6 +75,7 @@ function Index() {
   const [saldoInicial, setSaldoInicial] = useState<number>(0)
   const [saldoFinal, setSaldoFinal] = useState<number>(0)
   const [aplicacaoInvestimento, setAplicacaoInvestimento] = useState<number>(0)
+  const [resgateAplicacao, setResgateAplicacao] = useState<number>(0)
   const [isLoaded, setIsLoaded] = useState(false)
   
   // Estados para o mês e ano atual
@@ -148,6 +149,7 @@ function Index() {
       saldoInicial,
       saldoFinal,
       aplicacaoInvestimento,
+      resgateAplicacao,
       lastUpdated: new Date().toISOString()
     }
     localStorage.setItem('fluxoCaixaData', JSON.stringify(data))
@@ -167,6 +169,7 @@ function Index() {
         setSaldoInicial(data.saldoInicial || 0)
         setSaldoFinal(data.saldoFinal || 0)
         setAplicacaoInvestimento(data.aplicacaoInvestimento || 0)
+        setResgateAplicacao(data.resgateAplicacao || 0)
       }
     } catch (error) {
       console.error('Erro ao carregar dados do localStorage:', error)
@@ -178,7 +181,7 @@ function Index() {
   // Salvar dados sempre que houver mudanças
   useEffect(() => {
     saveToLocalStorage()
-  }, [entries, exits, saldoInicial, saldoFinal, aplicacaoInvestimento, isLoaded])
+  }, [entries, exits, saldoInicial, saldoFinal, aplicacaoInvestimento, resgateAplicacao, isLoaded])
 
   const handleAddEntry = (data: EntryData) => {
     const newEntry = {
@@ -213,6 +216,7 @@ function Index() {
       setSaldoInicial(0)
       setSaldoFinal(0)
       setAplicacaoInvestimento(0)
+      setResgateAplicacao(0)
       localStorage.removeItem('fluxoCaixaData')
     }
   }
@@ -408,6 +412,20 @@ function Index() {
           style: 'currency',
           currency: 'BRL'
         }).format(aplicacaoInvestimento)
+      },
+      {
+        'Descrição': 'Aplicação Investimento',
+        'Valor': new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(aplicacaoInvestimento)
+      },
+      {
+        'Descrição': 'Resgate Aplicação',
+        'Valor': new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(resgateAplicacao)
       }
     ]
 
@@ -461,6 +479,9 @@ function Index() {
       acc[exit.type] += exit.amount
       return acc
     }, {} as Record<string, number>)
+
+    // Calcular total de entradas incluindo resgateAplicacao
+    const totalEntriesWithResgate = totalEntries + resgateAplicacao
 
     // Criar documento
     const doc = new Document({
@@ -532,7 +553,6 @@ function Index() {
                     children: [
                       new TableCell({
                         children: [new Paragraph({ children: [new TextRun({ text: type.toUpperCase(), bold: true, font: "Calibri", size: 20 })] })],
-
                         width: { size: 70, type: WidthType.PERCENTAGE },
                         margins: {
                           top: 30,
@@ -565,11 +585,11 @@ function Index() {
                     ],
                   })
                 ),
+              // Adicionar linha do Resgate Aplicação
               new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "TOTAL", bold: true, font: "Calibri", size: 20 })] })],
-
+                    children: [new Paragraph({ children: [new TextRun({ text: "RESGATE APLICAÇÃO", bold: true, font: "Calibri", size: 20 })] })],
                     width: { size: 70, type: WidthType.PERCENTAGE },
                     margins: {
                       top: 30,
@@ -584,7 +604,42 @@ function Index() {
                         text: new Intl.NumberFormat('pt-BR', {
                           style: 'currency',
                           currency: 'BRL'
-                        }).format(totalEntries),
+                        }).format(resgateAplicacao),
+                        bold: true,
+                        font: "Calibri",
+                        size: 20
+                      })],
+                      alignment: AlignmentType.RIGHT
+                    })],
+                    width: { size: 30, type: WidthType.PERCENTAGE },
+                    margins: {
+                      top: 30,
+                      bottom: 30,
+                      left: 80,
+                      right: 80,
+                    },
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph({ children: [new TextRun({ text: "TOTAL", bold: true, font: "Calibri", size: 20 })] })],
+                    width: { size: 70, type: WidthType.PERCENTAGE },
+                    margins: {
+                      top: 30,
+                      bottom: 30,
+                      left: 80,
+                      right: 80,
+                    },
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({ 
+                      children: [new TextRun({ 
+                        text: new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        }).format(totalEntriesWithResgate),
                             bold: true,
                             font: "Calibri",
                             size: 20
@@ -1001,6 +1056,11 @@ function Index() {
             label="Aplicação Investimento"
             value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(aplicacaoInvestimento)}
             onSave={setAplicacaoInvestimento}
+          />
+          <BalanceInput
+            label="Resgate Aplicação"
+            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(resgateAplicacao)}
+            onSave={setResgateAplicacao}
           />
         </div>
 

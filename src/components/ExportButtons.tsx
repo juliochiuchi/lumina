@@ -1,4 +1,4 @@
-import { Download, FileText, RefreshCcw } from 'lucide-react'
+import { Download, RefreshCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface ExportButtonsProps {
@@ -15,15 +15,15 @@ export function ExportButtons({ onExportExcel, onExportDocx, onRestart }: Export
         className="w-full lg:w-auto text-zinc-700 bg-zinc-200 hover:bg-zinc-100 flex items-center justify-center gap-2 text-sm sm:text-base"
       >
         <Download className="h-4 w-4" />
-        Exportar para Excel
+        Exportar para .xlsx
       </Button>
       
       <Button
         onClick={onExportDocx}
         className="w-full lg:w-auto text-zinc-700 bg-zinc-200 hover:bg-zinc-100 flex items-center justify-center gap-2 text-sm sm:text-base"
       >
-        <FileText className="h-4 w-4" />
-        Exportar para Docx
+        <Download className="h-4 w-4" />
+        Exportar para .docx
       </Button>
       
       <Button
