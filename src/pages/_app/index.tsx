@@ -137,6 +137,7 @@ function Index() {
   const totalEntries = entries.reduce((sum, entry) => sum + entry.amount, 0)
   const totalExits = exits.reduce((sum, exit) => sum + exit.amount, 0)
   const balance = totalEntries - totalExits
+  const saldoMesComResgate = balance + resgateAplicacao
 
   // Flag para controlar se os dados foram carregados
   // Função para salvar dados no localStorage
@@ -369,6 +370,7 @@ function Index() {
     ]
 
     // Criar planilha de RESUMO GERAL
+    const saldoMesComResgate = balance + resgateAplicacao
     const summaryData = [
       {
         'Descrição': 'Total de Entradas',
@@ -389,7 +391,7 @@ function Index() {
         'Valor': new Intl.NumberFormat('pt-BR', {
           style: 'currency',
           currency: 'BRL'
-        }).format(balance)
+        }).format(saldoMesComResgate)
       },
       {},
       {
@@ -408,20 +410,13 @@ function Index() {
       },
       {
         'Descrição': 'Aplicação Investimento',
-        'Valor': new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(aplicacaoInvestimento)
-      },
-      {
-        'Descrição': 'Aplicação Investimento',
-        'Valor': new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(aplicacaoInvestimento)
-      },
-      {
-        'Descrição': 'Resgate Aplicação',
+      'Valor': new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(aplicacaoInvestimento)
+    },
+    {
+      'Descrição': 'Resgate Aplicação',
         'Valor': new Intl.NumberFormat('pt-BR', {
           style: 'currency',
           currency: 'BRL'
@@ -810,7 +805,7 @@ function Index() {
                         text: new Intl.NumberFormat('pt-BR', {
                           style: 'currency',
                           currency: 'BRL'
-                        }).format(balance),
+                        }).format(saldoMesComResgate),
                         bold: true,
                         font: "Calibri"
                       })],
