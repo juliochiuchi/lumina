@@ -1177,7 +1177,6 @@ function Index() {
           <div className="flex-1 space-y-6">
             <CashFlowForm
               title="Adicionar Entrada"
-              titleNotification="Entrada"
               icon={<TrendingUp className="h-5 w-5 text-green-400" />}
               types={categoryNames}
               onSubmit={handleAddEntry}
@@ -1205,7 +1204,6 @@ function Index() {
           <div className="flex-1 space-y-6">
             <CashFlowForm
               title="Adicionar Saída"
-              titleNotification="Saída"
               icon={<TrendingDown className="h-5 w-5 text-red-400" />}
               types={categoryNames}
               onSubmit={handleAddExit}
