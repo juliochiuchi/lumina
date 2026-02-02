@@ -1163,7 +1163,13 @@ function Index() {
             <Skeleton className="h-24 rounded-xl" />
           </div>
         ) : (
-          <FinancialSummary totalEntries={totalEntries} totalExits={totalExits} balance={balance} />
+          <FinancialSummary
+            totalEntries={totalEntries}
+            totalExits={totalExits}
+            balance={balance}
+            totalEntriesWithRedemption={totalEntries + resgateAplicacao}
+            balanceWithRedemption={balance + resgateAplicacao}
+          />
         )}
 
         {/* Formulários e tabelas - lado a lado em telas grandes, empilhados em pequenas */}

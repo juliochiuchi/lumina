@@ -4,9 +4,11 @@ interface FinancialSummaryProps {
   totalEntries: number
   totalExits: number
   balance: number
+  totalEntriesWithRedemption?: number
+  balanceWithRedemption?: number
 }
 
-export function FinancialSummary({ totalEntries, totalExits, balance }: FinancialSummaryProps) {
+export function FinancialSummary({ totalEntries, totalExits, balance, totalEntriesWithRedemption, balanceWithRedemption }: FinancialSummaryProps) {
   return (
     <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 mb-6 sm:mb-8">
       <div className="bg-card p-4 sm:p-6 rounded-lg border border-border flex-1">
@@ -14,21 +16,34 @@ export function FinancialSummary({ totalEntries, totalExits, balance }: Financia
           <div className="p-2 bg-green-900/20 rounded-lg flex-shrink-0">
             <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex flex-col">
             <h3 className="text-xs sm:text-sm font-medium text-zinc-400">Total de Entradas</h3>
-            <p className="text-lg sm:text-2xl font-bold text-green-400 truncate">
-              {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              }).format(totalEntries)}
-            </p>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <p className="text-lg sm:text-2xl font-bold text-green-400 truncate">
+                {new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL'
+                }).format(totalEntries)}
+              </p>
+              {totalEntriesWithRedemption !== undefined && (
+                <>
+                  <span className="text-zinc-500">/</span>
+                  <p className="text-sm sm:text-base font-semibold text-green-400/80 truncate">
+                    {new Intl.NumberFormat('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL'
+                    }).format(totalEntriesWithRedemption)}
+                  </p>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       <div className="bg-card p-4 sm:p-6 rounded-lg border border-border flex-1">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-emerald-900/20 rounded-lg flex-shrink-0">
+          <div className="p-2 bg-red-900/20 rounded-lg flex-shrink-0">
             <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-red-400" />
           </div>
           <div className="min-w-0">
@@ -50,15 +65,29 @@ export function FinancialSummary({ totalEntries, totalExits, balance }: Financia
             <DollarSign className={`h-5 w-5 sm:h-6 sm:w-6 ${balance >= 0 ? 'text-blue-400' : 'text-red-400'
               }`} />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex flex-col">
             <h3 className="text-xs sm:text-sm font-medium text-zinc-400">Saldo do Mês</h3>
-            <p className={`text-lg sm:text-2xl font-bold truncate ${balance >= 0 ? 'text-blue-400' : 'text-red-400'
-              }`}>
-              {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              }).format(balance)}
-            </p>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <p className={`text-lg sm:text-2xl font-bold truncate ${balance >= 0 ? 'text-blue-400' : 'text-red-400'
+                }`}>
+                {new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL'
+                }).format(balance)}
+              </p>
+              {balanceWithRedemption !== undefined && (
+                <>
+                  <span className="text-zinc-500">/</span>
+                  <p className={`text-sm sm:text-base font-semibold truncate ${balance >= 0 ? 'text-blue-400/80' : 'text-red-400/80'
+                    }`}>
+                    {new Intl.NumberFormat('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL'
+                    }).format(balanceWithRedemption)}
+                  </p>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
