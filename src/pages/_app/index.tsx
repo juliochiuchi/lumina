@@ -1,1087 +1,370 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import { z } from 'zod'
-import { TrendingUp, TrendingDown } from 'lucide-react'
-import * as XLSX from 'xlsx'
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, AlignmentType, WidthType, BorderStyle } from 'docx'
-import { saveAs } from 'file-saver'
-
-// Componentes extraídos
-import { CashFlowForm } from '@/components/CashFlowForm'
-import { CashFlowTable } from '@/components/CashFlowTable'
-import { BalanceInput } from '@/components/BalanceInput'
-import { TypeSummary } from '@/components/TypeSummary'
-import { ExportButtons } from '@/components/ExportButtons'
-import { FinancialSummary } from '@/components/FinancialSummary'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { cashFlowService, type CashFlow } from '@/services/cashFlowService'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { Loader2, Plus, Trash2 } from 'lucide-react'
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerFooter, DrawerClose, DrawerDescription } from '@/components/ui/drawer'
+import { Input } from '@/components/ui/input'
+import { CurrencyInput } from '@/components/CurrencyInput'
+import { toast } from 'sonner'
+import { ConfirmationModal } from '@/components/ui/confirmation-modal'
 
 export const Route = createFileRoute('/_app/')({
   component: Index,
 })
 
-// Schemas de validação
-const entrySchema = z.object({
-  description: z.string().min(1, 'Descrição é obrigatória').max(100, 'Descrição muito longa'),
-  type: z.string().min(1, 'Tipo é obrigatório'),
-  amount: z.number().positive('Valor deve ser positivo')
+// Schema for validation
+const filterSchema = z.object({
+  year: z.string().min(4, "Selecione um ano"),
 })
 
-const exitSchema = z.object({
-  description: z.string().min(1, 'Descrição é obrigatória').max(100, 'Descrição muito longa'),
-  type: z.string().min(1, 'Tipo é obrigatório'),
-  amount: z.number().positive('Valor deve ser positivo')
+const createMovementSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório").max(250, "Nome deve ter no máximo 250 caracteres"),
+  initial_balance: z.string().min(1, "Saldo inicial é obrigatório"),
+  final_balance: z.string().min(1, "Saldo final é obrigatório"),
+  investment_application: z.string().min(1, "Aplicação investimento é obrigatório"),
+  redemption_application: z.string().min(1, "Resgate aplicação é obrigatório"),
+  regard_month: z.string().min(1, "Mês é obrigatório"),
+  year: z.string()
 })
 
-type EntryData = z.infer<typeof entrySchema>
-type ExitData = z.infer<typeof exitSchema>
+type FilterFormValues = z.infer<typeof filterSchema>
+type CreateMovementFormValues = z.infer<typeof createMovementSchema>
 
-// Tipos disponíveis
-const entryTypes = [
-  'Dízimo',
-  'Oferta',
-  'Oferta Construção',
-  'Aluguel',
-  'Resgate',
-  'Reembolso',
-  'Jantar Coordenadoria',
-  'Despesas Pastor',
-  'Tarifa Banco',
-  'Manutenção',
-  'Energia',
-  'Água',
-  'Limpeza',
-  'Contabilidade',
-  'AG',
-  'Presbitério Rio Preto',
-  'Internet',
-  'Missões',
-  'Ministérios',
-  'Mercado',
-  'Eventos',
-  'Lembranças',
-  'Equipamentos',
-  'Documentos Administrativos',
-  'Ajuda de Custo',
-  'Investimentos',
-  'Fúnebre',
-  'Aplicação Resgate',
-  'Entrada',
+const MONTHS = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ]
 
-const exitTypes = [...entryTypes]
-
 function Index() {
-  const [entries, setEntries] = useState<(EntryData & { id: string; date: string })[]>([])
-  const [exits, setExits] = useState<(ExitData & { id: string; date: string })[]>([])
-  const [saldoInicial, setSaldoInicial] = useState<number>(0)
-  const [saldoFinal, setSaldoFinal] = useState<number>(0)
-  const [aplicacaoInvestimento, setAplicacaoInvestimento] = useState<number>(0)
-  const [resgateAplicacao, setResgateAplicacao] = useState<number>(0)
-  const [isLoaded, setIsLoaded] = useState(false)
-  
-  // Estados para o mês e ano atual
-  const [mesAtual, setMesAtual] = useState<string>('')
-  const [anoAtual, setAnoAtual] = useState<number>(0)
+  const navigate = useNavigate()
+  const [movements, setMovements] = useState<CashFlow[]>([])
+  const [loading, setLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [years, setYears] = useState<string[]>([])
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [movementToDelete, setMovementToDelete] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  // Array com os nomes dos meses em português
-  const nomesMeses = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ]
+  const form = useForm<FilterFormValues>({
+    resolver: zodResolver(filterSchema),
+    defaultValues: {
+      year: new Date().getFullYear().toString(),
+    },
+  })
 
-  // Função para obter o mês anterior e ano atual
-  const obterMesEAnoAtual = () => {
-    const hoje = new Date()
-    const indiceMesAnterior = hoje.getMonth() - 1 // Mês anterior (0-11)
-    const ano = hoje.getFullYear()
-    
-    // Se o mês anterior for -1 (janeiro atual), usar dezembro (índice 11)
-    const indiceMesFinal = indiceMesAnterior < 0 ? 11 : indiceMesAnterior
-    
-    setMesAtual(nomesMeses[indiceMesFinal])
-    setAnoAtual(ano)
-  }
+  const createForm = useForm<CreateMovementFormValues>({
+    resolver: zodResolver(createMovementSchema),
+    defaultValues: {
+      name: '',
+      initial_balance: 'R$ 0,00',
+      final_balance: 'R$ 0,00',
+      investment_application: 'R$ 0,00',
+      redemption_application: 'R$ 0,00',
+      regard_month: '',
+      year: new Date().getFullYear().toString()
+    }
+  })
 
-  // Estados para primeiro e último dia do mês atual
-  const [primeiroDiaDoMes, setPrimeiroDiaDoMes] = useState<string>('')
-  const [ultimoDiaDoMes, setUltimoDiaDoMes] = useState<string>('')
-
-  // Função para formatar data no formato DD/MM/YYYY
-  const formatarData = (data: Date): string => {
-    const dia = data.getDate().toString().padStart(2, '0')
-    const mes = (data.getMonth() + 1).toString().padStart(2, '0')
-    const ano = data.getFullYear()
-    return `${dia}/${mes}/${ano}`
-  }
-
-  // Função para calcular primeiro e último dia do mês anterior
-  const calcularDatasDoMes = () => {
-    const hoje = new Date()
-    
-    // Primeiro dia do mês anterior
-    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)
-    
-    // Último dia do mês anterior
-    const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth(), 0)
-    
-    setPrimeiroDiaDoMes(formatarData(primeiroDia))
-    setUltimoDiaDoMes(formatarData(ultimoDia))
-  }
-
+  // Generate a list of years for the dropdown (e.g., last 5 years + next year)
   useEffect(() => {
-    calcularDatasDoMes() // calcular as datas quando o componente é montado
-    obterMesEAnoAtual() // obter mês e ano quando o componente é montado
-    loadFromLocalStorage() // carregar dados quando o componente é montado
+    const currentYear = new Date().getFullYear()
+    const yearList = Array.from({ length: 6 }, (_, i) => (currentYear - 4 + i).toString()).reverse()
+    setYears(yearList)
   }, [])
 
-  // Calcular totais
-  const totalEntries = entries.reduce((sum, entry) => sum + entry.amount, 0)
-  const totalExits = exits.reduce((sum, exit) => sum + exit.amount, 0)
-  const balance = totalEntries - totalExits
-  const saldoMesComResgate = balance + resgateAplicacao
-
-  // Flag para controlar se os dados foram carregados
-  // Função para salvar dados no localStorage
-  const saveToLocalStorage = () => {
-    if (!isLoaded) return // Não salvar se ainda não carregou os dados
-    
-    const data = {
-      entries,
-      exits,
-      saldoInicial,
-      saldoFinal,
-      aplicacaoInvestimento,
-      resgateAplicacao,
-      lastUpdated: new Date().toISOString()
-    }
-    localStorage.setItem('fluxoCaixaData', JSON.stringify(data))
-    console.log('Dados salvos no localStorage:', data)
-  }
-
-  // Função para carregar dados do localStorage
-  const loadFromLocalStorage = () => {
+  const fetchMovements = async (data: FilterFormValues) => {
+    setLoading(true)
     try {
-      const savedData = localStorage.getItem('fluxoCaixaData')
-      if (savedData) {
-        const data = JSON.parse(savedData)
-        console.log('Dados carregados do localStorage:', data)
-        
-        setEntries(data.entries || [])
-        setExits(data.exits || [])
-        setSaldoInicial(data.saldoInicial || 0)
-        setSaldoFinal(data.saldoFinal || 0)
-        setAplicacaoInvestimento(data.aplicacaoInvestimento || 0)
-        setResgateAplicacao(data.resgateAplicacao || 0)
-      }
-    } catch (error) {
-      console.error('Erro ao carregar dados do localStorage:', error)
+      const result = await cashFlowService.getByYear(data.year)
+      setMovements(result || [])
+    } catch (err) {
+      console.error('Unexpected error:', err)
     } finally {
-      setIsLoaded(true) // Marcar como carregado independentemente do resultado
+      setLoading(false)
     }
   }
 
-  // Salvar dados sempre que houver mudanças
+  // Fetch initial data on mount with default year
   useEffect(() => {
-    saveToLocalStorage()
-  }, [entries, exits, saldoInicial, saldoFinal, aplicacaoInvestimento, resgateAplicacao, isLoaded])
+    fetchMovements(form.getValues())
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleAddEntry = (data: EntryData) => {
-    const newEntry = {
-      ...data,
-      id: Date.now().toString(),
-      date: new Date().toLocaleDateString('pt-BR')
-    }
-    setEntries([...entries, newEntry])
+  const onSubmit = (data: FilterFormValues) => {
+    fetchMovements(data)
   }
 
-  const handleAddExit = (data: ExitData) => {
-    const newExit = {
-      ...data,
-      id: Date.now().toString(),
-      date: new Date().toLocaleDateString('pt-BR')
+  const onCreateSubmit = async (data: CreateMovementFormValues) => {
+    setIsSubmitting(true)
+    try {
+      // Parse currency values
+      // CurrencyInput returns formatted string like "R$ 0,00"
+      // We need to parse it back to number
+
+      const parse = (val: string) => {
+        const digits = val.replace(/\D/g, '')
+        return parseInt(digits) / 100
+      }
+
+      const newMovement = await cashFlowService.create({
+        name: data.name,
+        initial_balance: parse(data.initial_balance),
+        final_balance: parse(data.final_balance),
+        investment_application: parse(data.investment_application),
+        redemption_application: parse(data.redemption_application),
+        regard_month: data.regard_month,
+        year: data.year
+      })
+
+      toast.success("Movimento criado com sucesso!")
+      setIsDrawerOpen(false)
+      createForm.reset()
+
+      // Navigate to cash_flow page with the new ID
+      navigate({
+        to: '/cash_flow',
+        search: { id: newMovement.id }
+      })
+
+    } catch (error) {
+      console.error(error)
+      toast.error("Erro ao criar movimento")
+    } finally {
+      setIsSubmitting(false)
     }
-    setExits([...exits, newExit])
   }
 
-  const handleDeleteEntry = (id: string) => {
-    setEntries(entries.filter(entry => entry.id !== id))
-  }
+  const confirmDelete = async () => {
+    if (!movementToDelete) return
 
-  const handleDeleteExit = (id: string) => {
-    setExits(exits.filter(exit => exit.id !== id))
-  }
-
-  const handleRestart = () => {
-    if (window.confirm('Tem certeza que deseja reiniciar? Todos os dados serão perdidos.')) {
-      setEntries([])
-      setExits([])
-      setSaldoInicial(0)
-      setSaldoFinal(0)
-      setAplicacaoInvestimento(0)
-      setResgateAplicacao(0)
-      localStorage.removeItem('fluxoCaixaData')
+    setIsDeleting(true)
+    try {
+      await cashFlowService.delete(movementToDelete)
+      setMovements(prev => prev.filter(m => m.id !== movementToDelete))
+      toast.success("Movimento excluído com sucesso!")
+      setDeleteModalOpen(false)
+    } catch (error) {
+      console.error(error)
+      toast.error("Erro ao excluir movimento")
+    } finally {
+      setIsDeleting(false)
+      setMovementToDelete(null)
     }
   }
 
-  // Função para exportar para Excel
-  const exportToExcel = () => {
-    // Preparar dados das entradas
-    const entriesData = entries.map(entry => ({
-      'Descrição': entry.description,
-      'Categoria': entry.type,
-      'Valor': new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-      }).format(entry.amount),
-      'Data': entry.date
-    }))
-
-    // Preparar dados das saídas
-    const exitsData = exits.map(exit => ({
-      'Descrição': exit.description,
-      'Categoria': exit.type,
-      'Valor': new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-      }).format(exit.amount),
-      'Data': exit.date
-    }))
-
-    // Calcular totais por categoria para entradas
-    const entryTypeTotals = entries.reduce((acc, entry) => {
-      if (!acc[entry.type]) {
-        acc[entry.type] = 0
-      }
-      acc[entry.type] += entry.amount
-      return acc
-    }, {} as Record<string, number>)
-
-    // Calcular totais por categoria para saídas
-    const exitTypeTotals = exits.reduce((acc, exit) => {
-      if (!acc[exit.type]) {
-        acc[exit.type] = 0
-      }
-      acc[exit.type] += exit.amount
-      return acc
-    }, {} as Record<string, number>)
-
-    // Criar workbook
-    const wb = XLSX.utils.book_new()
-
-    // Criar planilha de ENTRADAS com totais
-    const entriesWithSummary = [
-      ...entriesData,
-      {},
-      { 'Descrição': 'TOTAIS POR CATEGORIA', 'Categoria': '', 'Valor': '', 'Data': '' },
-      ...Object.entries(entryTypeTotals)
-        .sort(([,a], [,b]) => b - a)
-        .map(([type, total]) => ({
-          'Descrição': type,
-          'Categoria': '',
-          'Valor': new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL'
-          }).format(total),
-          'Data': ''
-        })),
-      {},
-      {
-        'Descrição': 'TOTAL GERAL DE ENTRADAS',
-        'Categoria': '',
-        'Valor': new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(totalEntries),
-        'Data': ''
-      }
-    ]
-
-    const wsEntries = XLSX.utils.json_to_sheet(entriesWithSummary)
-
-    // Aplicar cor verde nas células de cabeçalho e totais
-    const entriesRange = XLSX.utils.decode_range(wsEntries['!ref'] || 'A1')
-    
-    // Colorir cabeçalho
-    for (let col = entriesRange.s.c; col <= entriesRange.e.c; col++) {
-      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col })
-      if (!wsEntries[cellAddress]) continue
-      wsEntries[cellAddress].s = {
-        fill: { fgColor: "22C55E" }, // Verde
-        font: { color: { rgb: "FFFFFF" }, bold: true }
-      }
-    }
-
-    // Ajustar largura das colunas
-    wsEntries['!cols'] = [
-      { wch: 30 }, // Descrição
-      { wch: 20 }, // Categoria
-      { wch: 15 }, // Valor
-      { wch: 12 }  // Data
-    ]
-
-    // Criar planilha de SAÍDAS
-    const exitsWithSummary = [
-      ...exitsData,
-      {},
-      { 'Descrição': 'TOTAIS POR CATEGORIA', 'Categoria': '', 'Valor': '', 'Data': '' },
-      ...Object.entries(exitTypeTotals)
-        .sort(([,a], [,b]) => b - a)
-        .map(([type, total]) => ({
-          'Descrição': type,
-          'Categoria': '',
-          'Valor': new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL'
-          }).format(total),
-          'Data': ''
-        })),
-      {},
-      {
-        'Descrição': 'TOTAL GERAL DE SAÍDAS',
-        'Categoria': '',
-        'Valor': new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(totalExits),
-        'Data': ''
-      }
-    ]
-
-    const wsExits = XLSX.utils.json_to_sheet(exitsWithSummary)
-
-    // Aplicar cor vermelha nas células de cabeçalho e totais
-    const exitsRange = XLSX.utils.decode_range(wsExits['!ref'] || 'A1')
-    
-    // Colorir cabeçalho
-    for (let col = exitsRange.s.c; col <= exitsRange.e.c; col++) {
-      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col })
-      if (!wsExits[cellAddress]) continue
-      wsExits[cellAddress].s = {
-        fill: { fgColor: "EF4444" }, // Vermelho
-        font: { color: { rgb: "FFFFFF" }, bold: true }
-      }
-    }
-
-    // Ajustar largura das colunas
-    wsExits['!cols'] = [
-      { wch: 30 }, // Descrição
-      { wch: 20 }, // Categoria
-      { wch: 15 }, // Valor
-      { wch: 12 }  // Data
-    ]
-
-    // Criar planilha de RESUMO GERAL
-    const saldoMesComResgate = balance + resgateAplicacao
-    const summaryData = [
-      {
-        'Descrição': 'Total de Entradas',
-        'Valor': new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(totalEntries)
-      },
-      {
-        'Descrição': 'Total de Saídas',
-        'Valor': new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(totalExits)
-      },
-      {
-        'Descrição': 'Saldo do Mês',
-        'Valor': new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(saldoMesComResgate)
-      },
-      {},
-      {
-        'Descrição': 'Saldo Inicial',
-        'Valor': new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(saldoInicial)
-      },
-      {
-        'Descrição': 'Saldo Final',
-        'Valor': new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(saldoFinal)
-      },
-      {
-        'Descrição': 'Aplicação Investimento',
-      'Valor': new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-      }).format(aplicacaoInvestimento)
-    },
-    {
-      'Descrição': 'Resgate Aplicação',
-        'Valor': new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(resgateAplicacao)
-      }
-    ]
-
-    const wsSummary = XLSX.utils.json_to_sheet(summaryData)
-
-    // Aplicar cor azul nas células de cabeçalho
-    const summaryRange = XLSX.utils.decode_range(wsSummary['!ref'] || 'A1')
-    
-    // Colorir cabeçalho
-    for (let col = summaryRange.s.c; col <= summaryRange.e.c; col++) {
-      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col })
-      if (!wsSummary[cellAddress]) continue
-      wsSummary[cellAddress].s = {
-        fill: { fgColor: "3B82F6" }, // Azul
-        font: { color: { rgb: "FFFFFF" }, bold: true }
-      }
-    }
-
-    // Ajustar largura das colunas
-    wsSummary['!cols'] = [
-      { wch: 30 }, // Descrição
-      { wch: 20 }  // Valor
-    ]
-
-    // Adicionar planilhas ao workbook
-    XLSX.utils.book_append_sheet(wb, wsEntries, 'Entradas')
-    XLSX.utils.book_append_sheet(wb, wsExits, 'Saídas')
-    XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo Geral')
-
-    // Salvar arquivo
-    const fileName = `fluxo-caixa-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`
-    XLSX.writeFile(wb, fileName)
-  }
-
-  // Função para exportar para DOCX
-  const exportToDocx = async () => {
-    // Calcular totais por categoria para entradas
-    const entryTypeTotals = entries.reduce((acc, entry) => {
-      if (!acc[entry.type]) {
-        acc[entry.type] = 0
-      }
-      acc[entry.type] += entry.amount
-      return acc
-    }, {} as Record<string, number>)
-
-    // Calcular totais por categoria para saídas
-    const exitTypeTotals = exits.reduce((acc, exit) => {
-      if (!acc[exit.type]) {
-        acc[exit.type] = 0
-      }
-      acc[exit.type] += exit.amount
-      return acc
-    }, {} as Record<string, number>)
-
-    // Calcular total de entradas incluindo resgateAplicacao
-    const totalEntriesWithResgate = totalEntries + resgateAplicacao
-
-    // Criar documento
-    const doc = new Document({
-      sections: [{
-        properties: {
-          page: {
-            margin: {
-              top: 720,
-              right: 720,
-              bottom: 720,
-              left: 720,
-            },
-          },
-        },
-        children: [
-          // Seção VAZIA
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { before: 1450, after: 1450 },
-          }),
-
-          // Título
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `PRESTAÇÃO DE CONTAS MÊS DE ${mesAtual.toUpperCase()} DE ${anoAtual}`,
-                bold: true,
-                size: 24,
-                font: "Calibri",
-              }),
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 200 },
-          }),
-
-          // Seção ENTRADAS
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: "ENTRADAS",
-                bold: true,
-                size: 20,
-                font: "Calibri",
-              }),
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: { before: 200, after: 200 },
-          }),
-
-          // Tabela de Entradas
-          new Table({
-            width: {
-              size: 100,
-              type: WidthType.PERCENTAGE,
-            },
-            borders: {
-              top: { style: BorderStyle.SINGLE, size: 1 },
-              bottom: { style: BorderStyle.SINGLE, size: 1 },
-              left: { style: BorderStyle.SINGLE, size: 1 },
-              right: { style: BorderStyle.SINGLE, size: 1 },
-              insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-              insideVertical: { style: BorderStyle.SINGLE, size: 1 },
-            },
-            rows: [
-              ...Object.entries(entryTypeTotals)
-                .sort(([,a], [,b]) => b - a)
-                .map(([type, total]) => 
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        children: [new Paragraph({ children: [new TextRun({ text: type.toUpperCase(), bold: true, font: "Calibri", size: 20 })] })],
-                        width: { size: 70, type: WidthType.PERCENTAGE },
-                        margins: {
-                          top: 30,
-                          bottom: 30,
-                          left: 80,
-                          right: 80,
-                        },
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({ 
-                          children: [new TextRun({ 
-                            text: new Intl.NumberFormat('pt-BR', {
-                              style: 'currency',
-                              currency: 'BRL'
-                            }).format(total),
-                            bold: true,
-                            font: "Calibri",
-                            size: 20
-                          })],
-                          alignment: AlignmentType.RIGHT
-                        })],
-                        width: { size: 30, type: WidthType.PERCENTAGE },
-                        margins: {
-                          top: 30,
-                          bottom: 30,
-                          left: 80,
-                          right: 80,
-                        },
-                      }),
-                    ],
-                  })
-                ),
-              // Adicionar linha do Resgate Aplicação
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "RESGATE APLICAÇÃO", bold: true, font: "Calibri", size: 20 })] })],
-                    width: { size: 70, type: WidthType.PERCENTAGE },
-                    margins: {
-                      top: 30,
-                      bottom: 30,
-                      left: 80,
-                      right: 80,
-                    },
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ 
-                      children: [new TextRun({ 
-                        text: new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL'
-                        }).format(resgateAplicacao),
-                        bold: true,
-                        font: "Calibri",
-                        size: 20
-                      })],
-                      alignment: AlignmentType.RIGHT
-                    })],
-                    width: { size: 30, type: WidthType.PERCENTAGE },
-                    margins: {
-                      top: 30,
-                      bottom: 30,
-                      left: 80,
-                      right: 80,
-                    },
-                  }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "TOTAL", bold: true, font: "Calibri", size: 20 })] })],
-                    width: { size: 70, type: WidthType.PERCENTAGE },
-                    margins: {
-                      top: 30,
-                      bottom: 30,
-                      left: 80,
-                      right: 80,
-                    },
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ 
-                      children: [new TextRun({ 
-                        text: new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL'
-                        }).format(totalEntriesWithResgate),
-                            bold: true,
-                            font: "Calibri",
-                            size: 20
-                      })],
-                      alignment: AlignmentType.RIGHT
-                    })],
-                    width: { size: 30, type: WidthType.PERCENTAGE },
-                    margins: {
-                      top: 30,
-                      bottom: 30,
-                      left: 80,
-                      right: 80,
-                    },
-                  }),
-                ],
-              }),
-            ],
-          }),
-
-          // Seção SAÍDAS
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: "SAÍDAS",
-                bold: true,
-                size: 20,
-                font: "Calibri",
-              }),
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: { before: 400, after: 200 },
-          }),
-
-          // Tabela de Saídas
-          new Table({
-            width: {
-              size: 100,
-              type: WidthType.PERCENTAGE,
-            },
-            borders: {
-              top: { style: BorderStyle.SINGLE, size: 1 },
-              bottom: { style: BorderStyle.SINGLE, size: 1 },
-              left: { style: BorderStyle.SINGLE, size: 1 },
-              right: { style: BorderStyle.SINGLE, size: 1 },
-              insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-              insideVertical: { style: BorderStyle.SINGLE, size: 1 },
-            },
-            rows: [
-              ...Object.entries(exitTypeTotals)
-                .sort(([,a], [,b]) => b - a)
-                .map(([type, total]) => 
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        children: [new Paragraph({ children: [new TextRun({ text: type.toUpperCase(), bold: true, font: "Calibri" })] })],
-                        width: { size: 70, type: WidthType.PERCENTAGE },
-                        margins: {
-                          top: 30,
-                          bottom: 30,
-                          left: 80,
-                          right: 80,
-                        },
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({ 
-                          children: [new TextRun({ 
-                            text: new Intl.NumberFormat('pt-BR', {
-                              style: 'currency',
-                              currency: 'BRL'
-                            }).format(total),
-                            bold: true,
-                            font: "Calibri"
-                          })],
-                          alignment: AlignmentType.RIGHT
-                        })],
-                        width: { size: 30, type: WidthType.PERCENTAGE },
-                        margins: {
-                          top: 30,
-                          bottom: 30,
-                          left: 80,
-                          right: 80,
-                        },
-                      }),
-                    ],
-                  })
-                ),
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "TOTAL", bold: true, font: "Calibri" })] })],
-                    width: { size: 70, type: WidthType.PERCENTAGE },
-                    margins: {
-                      top: 30,
-                      bottom: 30,
-                      left: 80,
-                      right: 80,
-                    },
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ 
-                      children: [new TextRun({ 
-                        text: new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL'
-                        }).format(totalExits),
-                        bold: true,
-                        font: "Calibri"
-                      })],
-                      alignment: AlignmentType.RIGHT
-                    })],
-                    width: { size: 30, type: WidthType.PERCENTAGE },
-                    margins: {
-                      top: 30,
-                      bottom: 30,
-                      left: 80,
-                      right: 80,
-                    },
-                  }),
-                ],
-              }),
-            ],
-          }),
-
-          // Seção SALDO DO MES
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: "", // titulo da sessao caso houver
-                bold: true,
-                size: 24,
-                font: "Calibri",
-              }),
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: { before: 400, after: 200 },
-          }),
-
-          // Saldo do Mês
-          new Table({
-            width: {
-              size: 100,
-              type: WidthType.PERCENTAGE,
-            },
-            borders: {
-              top: { style: BorderStyle.SINGLE, size: 1 },
-              bottom: { style: BorderStyle.SINGLE, size: 1 },
-              left: { style: BorderStyle.SINGLE, size: 1 },
-              right: { style: BorderStyle.SINGLE, size: 1 },
-              insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-              insideVertical: { style: BorderStyle.SINGLE, size: 1 },
-            },
-            rows: [
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "SALDO DO MÊS", bold: true, font: "Calibri" })] })],
-                    width: { size: 70, type: WidthType.PERCENTAGE },
-                    margins: {
-                      top: 30,
-                      bottom: 30,
-                      left: 80,
-                      right: 80,
-                    },
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ 
-                      children: [new TextRun({ 
-                        text: new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL'
-                        }).format(saldoMesComResgate),
-                        bold: true,
-                        font: "Calibri"
-                      })],
-                      alignment: AlignmentType.RIGHT
-                    })],
-                    width: { size: 30, type: WidthType.PERCENTAGE },
-                    margins: {
-                      top: 30,
-                      bottom: 30,
-                      left: 80,
-                      right: 80,
-                    },
-                  }),
-                ],
-              }),
-            ],
-          }),
-
-          // Seção SALDO DISPONÍVEL
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: "SALDO DISPONÍVEL",
-                bold: true,
-                size: 20,
-                font: "Calibri",
-              }),
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: { before: 400, after: 200 },
-          }),
-
-          // Tabela Saldo Disponível
-          new Table({
-            width: {
-              size: 100,
-              type: WidthType.PERCENTAGE,
-            },
-            borders: {
-              top: { style: BorderStyle.SINGLE, size: 1 },
-              bottom: { style: BorderStyle.SINGLE, size: 1 },
-              left: { style: BorderStyle.SINGLE, size: 1 },
-              right: { style: BorderStyle.SINGLE, size: 1 },
-              insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-              insideVertical: { style: BorderStyle.SINGLE, size: 1 },
-            },
-            rows: [
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: `SALDO INICIAL (${primeiroDiaDoMes})`, bold: true, font: "Calibri" })] })],
-                    width: { size: 70, type: WidthType.PERCENTAGE },
-                    margins: {
-                      top: 30,
-                      bottom: 30,
-                      left: 80,
-                      right: 80,
-                    },
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ 
-                      children: [new TextRun({ 
-                        text: new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL'
-                        }).format(saldoInicial),
-                        bold: true,
-                        font: "Calibri"
-                      })],
-                      alignment: AlignmentType.RIGHT
-                    })],
-                    width: { size: 30, type: WidthType.PERCENTAGE },
-                    margins: {
-                      top: 30,
-                      bottom: 30,
-                      left: 80,
-                      right: 80,
-                    },
-                  }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: `SALDO FINAL (${ultimoDiaDoMes})`, bold: true, font: "Calibri" })] })],
-                    width: { size: 70, type: WidthType.PERCENTAGE },
-                    margins: {
-                      top: 30,
-                      bottom: 30,
-                      left: 80,
-                      right: 80,
-                    },
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ 
-                      children: [new TextRun({ 
-                        text: new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL'
-                        }).format(saldoFinal),
-                        bold: true,
-                        font: "Calibri"
-                      })],
-                      alignment: AlignmentType.RIGHT
-                    })],
-                    width: { size: 30, type: WidthType.PERCENTAGE },
-                    margins: {
-                      top: 30,
-                      bottom: 30,
-                      left: 80,
-                      right: 80,
-                    },
-                  }),
-                ],
-              }),
-            ],
-          }),
-
-          // Seção FUNDOS DE INVESTIMENTO
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: "FUNDOS DE INVESTIMENTO",
-                bold: true,
-                size: 20,
-                font: "Calibri",
-              }),
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: { before: 400, after: 200 },
-          }),
-
-          // Tabela Fundos de Investimento
-          new Table({
-            width: {
-              size: 100,
-              type: WidthType.PERCENTAGE,
-            },
-            borders: {
-              top: { style: BorderStyle.SINGLE, size: 1 },
-              bottom: { style: BorderStyle.SINGLE, size: 1 },
-              left: { style: BorderStyle.SINGLE, size: 1 },
-              right: { style: BorderStyle.SINGLE, size: 1 },
-              insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-              insideVertical: { style: BorderStyle.SINGLE, size: 1 },
-            },
-            rows: [
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph({ children: [new TextRun({ text: "APLICAÇÃO", bold: true, font: "Calibri" })] })],
-                    width: { size: 70, type: WidthType.PERCENTAGE },
-                    margins: {
-                      top: 30,
-                      bottom: 30,
-                      left: 80,
-                      right: 80,
-                    },
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ 
-                      children: [new TextRun({ 
-                        text: new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL'
-                        }).format(aplicacaoInvestimento),
-                        bold: true,
-                        font: "Calibri"
-                      })],
-                      alignment: AlignmentType.RIGHT
-                    })],
-                    width: { size: 30, type: WidthType.PERCENTAGE },
-                    margins: {
-                      top: 30,
-                      bottom: 30,
-                      left: 80,
-                      right: 80,
-                    },
-                  }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      }],
-    })
-
-    // Gerar e baixar o arquivo
-    const blob = await Packer.toBlob(doc)
-    saveAs(blob, `prestacao-contas-${new Date().toISOString().slice(0, 7)}.docx`)
+  const handleDeleteClick = (id: string) => {
+    setMovementToDelete(id)
+    setDeleteModalOpen(true)
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
-        <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-4xl font-bold mb-2 font-poppins tracking-widest">LUMINA</h1>
-          <p className="text-zinc-400 text-sm sm:text-base">Controle de Fluxo de Caixa - Gerencie suas entradas e saídas financeiras</p>
+    <div className="min-h-screen bg-background text-foreground p-4 sm:p-8">
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Excluir Movimento"
+        description="Tem certeza que deseja excluir este movimento? Esta ação não pode ser desfeita."
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        isLoading={isDeleting}
+      />
+      <div className="container mx-auto max-w-7xl space-y-8">
+        <div className="flex flex-col space-y-4 md:flex-row md:items-end md:justify-between md:space-y-0">
+          <h1 className="text-3xl font-bold tracking-tight text-white">Movimentos de Caixa</h1>
+
+          <div className="flex flex-col sm:flex-row gap-4 items-end">
+            <Drawer direction="top" open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+              <DrawerTrigger asChild>
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  <Plus className="mr-2 h-4 w-4" /> Novo Movimento
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent className="top-0 mt-0 mb-auto rounded-b-[10px] rounded-t-none bottom-auto bg-card border-border text-card-foreground">
+                <div className="mx-auto w-full max-w-4xl">
+                  <DrawerHeader>
+                    <DrawerTitle className="text-zinc-50">Novo Movimento de Caixa</DrawerTitle>
+                    <DrawerDescription className="text-zinc-400">
+                      Informe os dados iniciais para a abertura de um novo movimento. Você será redirecionado após concluir e salvar esta etapa.
+                    </DrawerDescription>
+                  </DrawerHeader>
+                  <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="p-4 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2 col-span-1 md:col-span-2">
+                        <Label htmlFor="name">Nome</Label>
+                        <Input id="name" {...createForm.register("name")} className="bg-input border-border text-foreground placeholder:text-muted-foreground" />
+                        {createForm.formState.errors.name && <p className="text-destructive text-sm">{createForm.formState.errors.name.message}</p>}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Ano</Label>
+                        <Input {...createForm.register("year")} disabled className="bg-muted border-border text-muted-foreground cursor-not-allowed opacity-50" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Mês Referência</Label>
+                        <Controller
+                          control={createForm.control}
+                          name="regard_month"
+                          render={({ field }) => (
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <SelectTrigger className="bg-input border-border">
+                                <SelectValue placeholder="Selecione o mês" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-popover border-border text-popover-foreground">
+                                {MONTHS.map(month => (
+                                  <SelectItem key={month} value={month}>{month}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                        {createForm.formState.errors.regard_month && <p className="text-red-400 text-sm">{createForm.formState.errors.regard_month.message}</p>}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Saldo Inicial</Label>
+                        <Controller
+                          control={createForm.control}
+                          name="initial_balance"
+                          render={({ field }) => (
+                            <CurrencyInput
+                              value={field.value}
+                              onChange={field.onChange}
+                              error={createForm.formState.errors.initial_balance?.message}
+                            />
+                          )}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Saldo Final</Label>
+                        <Controller
+                          control={createForm.control}
+                          name="final_balance"
+                          render={({ field }) => (
+                            <CurrencyInput
+                              value={field.value}
+                              onChange={field.onChange}
+                              error={createForm.formState.errors.final_balance?.message}
+                            />
+                          )}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Aplicação Investimento</Label>
+                        <Controller
+                          control={createForm.control}
+                          name="investment_application"
+                          render={({ field }) => (
+                            <CurrencyInput
+                              value={field.value}
+                              onChange={field.onChange}
+                              error={createForm.formState.errors.investment_application?.message}
+                            />
+                          )}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Resgate Aplicação</Label>
+                        <Controller
+                          control={createForm.control}
+                          name="redemption_application"
+                          render={({ field }) => (
+                            <CurrencyInput
+                              value={field.value}
+                              onChange={field.onChange}
+                              error={createForm.formState.errors.redemption_application?.message}
+                            />
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <DrawerFooter className="flex flex-col gap-2 pt-4 w-full">
+                      <Button type="submit" disabled={isSubmitting} className="w-full bg-zinc-50 hover:bg-zinc-200 text-zinc-950">
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Salvar'}
+                      </Button>
+                      <DrawerClose asChild>
+                        <Button variant="outline" type="button" className="w-full bg-transparent border-zinc-700 text-zinc-100 hover:bg-zinc-800 hover:text-zinc-100">Cancelar</Button>
+                      </DrawerClose>
+                    </DrawerFooter>
+                  </form>
+                </div>
+              </DrawerContent>
+            </Drawer>
+
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full max-w-sm items-end space-x-4">
+              <div className="w-full space-y-2">
+                <Label htmlFor="year" className="text-zinc-200">Filtrar por Ano</Label>
+                <Controller
+                  control={form.control}
+                  name="year"
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <SelectTrigger id="year" className="w-full bg-zinc-900 border-zinc-800 text-zinc-100">
+                        <SelectValue placeholder="Selecione o ano" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+                        {years.map((year) => (
+                          <SelectItem key={year} value={year} className="focus:bg-zinc-800 focus:text-zinc-50 cursor-pointer">
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <Button type="submit" disabled={loading} className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200">
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Filtrar'}
+              </Button>
+            </form>
+          </div>
         </div>
 
-        <FinancialSummary totalEntries={totalEntries} totalExits={totalExits} balance={balance} />
-
-        {/* Formulários e tabelas - lado a lado em telas grandes, empilhados em pequenas */}
-        <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 mb-6 sm:mb-8 w-full">
-          <div className="flex-1 space-y-6">
-            <CashFlowForm
-              title="Adicionar Entrada"
-              titleNotification="Entrada"
-              icon={<TrendingUp className="h-5 w-5 text-green-400" />}
-              types={entryTypes}
-              onSubmit={handleAddEntry}
-              schema={entrySchema}
-            />
-            <CashFlowTable title="Entradas Registradas" data={entries} onDelete={handleDeleteEntry} />
-          </div>
-
-          <div className="flex-1 space-y-6">
-            <CashFlowForm
-              title="Adicionar Saída"
-              titleNotification="Saída"
-              icon={<TrendingDown className="h-5 w-5 text-red-400" />}
-              types={exitTypes}
-              onSubmit={handleAddExit}
-              schema={exitSchema}
-            />
-            <CashFlowTable title="Saídas Registradas" data={exits} onDelete={handleDeleteExit} />
-          </div>
+        <div className="flex flex-wrap gap-4">
+          {movements.length > 0 ? (
+            movements.map((movement) => (
+              <Card key={movement.id} className="w-full md:w-[calc(50%-0.5rem)] lg:w-[calc(33.33%-0.7rem)] xl:w-[calc(25%-0.8rem)] bg-card border-border text-card-foreground hover:bg-accent/50 transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {movement.regard_month}
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+                    onClick={() => handleDeleteClick(movement.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold truncate" title={movement.name}>{movement.name}</div>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    Ano: {movement.year}
+                  </p>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            !loading && (
+              <div className="w-full flex h-40 items-center justify-center rounded-lg border border-dashed border-zinc-800 text-zinc-500">
+                Nenhum movimento encontrado para este ano.
+              </div>
+            )
+          )}
         </div>
-
-        {/* Saldos - sempre empilhados conforme solicitado */}
-        <div className="flex flex-col gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <BalanceInput
-            label="Saldo Inicial"
-            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldoInicial)}
-            onSave={setSaldoInicial}
-          />
-          <BalanceInput
-            label="Saldo Final"
-            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldoFinal)}
-            onSave={setSaldoFinal}
-          />
-          <BalanceInput
-            label="Aplicação Investimento"
-            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(aplicacaoInvestimento)}
-            onSave={setAplicacaoInvestimento}
-          />
-          <BalanceInput
-            label="Resgate Aplicação"
-            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(resgateAplicacao)}
-            onSave={setResgateAplicacao}
-          />
-        </div>
-
-        {/* Resumos por categoria - lado a lado em telas grandes, empilhados em pequenas */}
-        <div className="flex flex-col lg:flex-row gap-6 mb-6 sm:mb-8">
-          <div className="flex-1">
-            <TypeSummary
-              title="Resumo de Entradas por Categoria"
-              data={entries}
-              icon={<TrendingUp className="h-5 w-5 text-green-400" />}
-            />
-          </div>
-          <div className="flex-1">
-            <TypeSummary
-              title="Resumo de Saídas por Categoria"
-              data={exits}
-              icon={<TrendingDown className="h-5 w-5 text-red-400" />}
-            />
-          </div>
-        </div>
-
-        <ExportButtons
-          onExportExcel={exportToExcel}
-          onExportDocx={exportToDocx}
-          onRestart={handleRestart}
-        />
       </div>
     </div>
   )

@@ -21,28 +21,28 @@ export function CashFlowForm({ title, titleNotification, icon, types, onSubmit, 
   const [type, setType] = useState('')
   const [amount, setAmount] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
-  
+
   // Ref para o campo de descrição
   const descriptionInputRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Converter valor monetário para número
     const numericAmount = parseFloat(
       amount.replace(/[^\d,]/g, '').replace(',', '.')
     )
-    
+
     const formData = {
       description: description.trim(),
       type,
       amount: numericAmount
     }
-    
+
     try {
       const validatedData = schema.parse(formData)
       onSubmit(validatedData)
-      
+
       // Notificação de sucesso
       toast.success(`${titleNotification} adicionada com sucesso!`, {
         description: `${description} - ${new Intl.NumberFormat('pt-BR', {
@@ -51,13 +51,13 @@ export function CashFlowForm({ title, titleNotification, icon, types, onSubmit, 
         }).format(numericAmount)}`,
         duration: 3000,
       })
-      
+
       // Limpar formulário
       setDescription('')
       setType('')
       setAmount('')
       setErrors({})
-      
+
       // Focar no campo descrição após adicionar com sucesso
       setTimeout(() => {
         descriptionInputRef.current?.focus()
@@ -66,16 +66,16 @@ export function CashFlowForm({ title, titleNotification, icon, types, onSubmit, 
       if (error instanceof z.ZodError) {
         const newErrors: Record<string, string> = {}
         const errorMessages: string[] = []
-        
+
         error.issues.forEach((err: z.ZodIssue) => {
           if (err.path[0]) {
             newErrors[err.path[0] as string] = err.message
             errorMessages.push(err.message)
           }
         })
-        
+
         setErrors(newErrors)
-        
+
         // Notificação de erro
         toast.error('Erro ao adicionar entrada', {
           description: errorMessages.join(', '),
@@ -92,12 +92,12 @@ export function CashFlowForm({ title, titleNotification, icon, types, onSubmit, 
   }
 
   return (
-    <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
+    <div className="bg-card p-6 rounded-lg border border-border">
       <div className="flex items-center gap-3 mb-6">
         {icon}
         <h2 className="text-xl font-bold text-zinc-100">{title}</h2>
       </div>
-      
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-zinc-300 mb-2">
@@ -110,8 +110,8 @@ export function CashFlowForm({ title, titleNotification, icon, types, onSubmit, 
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Digite a descrição..."
             className={cn(
-              "bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-400",
-              errors.description && "border-red-500"
+              "bg-input border-border text-foreground placeholder-muted-foreground",
+              errors.description && "border-destructive"
             )}
           />
           {errors.description && (
@@ -144,8 +144,8 @@ export function CashFlowForm({ title, titleNotification, icon, types, onSubmit, 
           />
         </div>
 
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           className="w-full text-zinc-700 bg-zinc-200 hover:bg-zinc-100"
         >
           Adicionar

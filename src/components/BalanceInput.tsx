@@ -16,7 +16,7 @@ export function BalanceInput({ label, value, onSave }: BalanceInputProps) {
     const numericValue = parseFloat(
       inputValue.replace(/[^\d,]/g, '').replace(',', '.')
     )
-    
+
     if (!isNaN(numericValue)) {
       onSave(numericValue)
       setIsEditing(false)
@@ -30,13 +30,13 @@ export function BalanceInput({ label, value, onSave }: BalanceInputProps) {
   }
 
   return (
-    <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+    <div className="bg-card p-4 rounded-lg border border-border">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-medium text-zinc-300">{label}</h3>
           <p className="text-lg font-bold text-zinc-100">{value}</p>
         </div>
-        
+
         {!isEditing ? (
           <Button
             variant="ghost"

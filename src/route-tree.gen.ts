@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './pages/__root'
 import { Route as AuthLayoutRouteImport } from './pages/_auth/layout'
 import { Route as AppLayoutRouteImport } from './pages/_app/layout'
 import { Route as AppIndexRouteImport } from './pages/_app/index'
+import { Route as AppCash_flowRouteImport } from './pages/_app/cash_flow'
 
 const AuthLayoutRoute = AuthLayoutRouteImport.update({
   id: '/_auth',
@@ -26,25 +27,33 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppLayoutRoute,
 } as any)
+const AppCash_flowRoute = AppCash_flowRouteImport.update({
+  id: '/cash_flow',
+  path: '/cash_flow',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
+  '/cash_flow': typeof AppCash_flowRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
+  '/cash_flow': typeof AppCash_flowRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppLayoutRouteWithChildren
   '/_auth': typeof AuthLayoutRoute
+  '/_app/cash_flow': typeof AppCash_flowRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/cash_flow' | '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/_app' | '/_auth' | '/_app/'
+  to: '/cash_flow' | '/'
+  id: '__root__' | '/_app' | '/_auth' | '/_app/cash_flow' | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -75,14 +84,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppLayoutRoute
     }
+    '/_app/cash_flow': {
+      id: '/_app/cash_flow'
+      path: '/cash_flow'
+      fullPath: '/cash_flow'
+      preLoaderRoute: typeof AppCash_flowRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
   }
 }
 
 interface AppLayoutRouteChildren {
+  AppCash_flowRoute: typeof AppCash_flowRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppLayoutRouteChildren: AppLayoutRouteChildren = {
+  AppCash_flowRoute: AppCash_flowRoute,
   AppIndexRoute: AppIndexRoute,
 }
 

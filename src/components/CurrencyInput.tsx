@@ -11,17 +11,17 @@ interface CurrencyInputProps {
 export function CurrencyInput({ value, onChange, placeholder, error }: CurrencyInputProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let inputValue = e.target.value
-    
+
     // Remove tudo que não é dígito
     inputValue = inputValue.replace(/\D/g, '')
-    
+
     // Converte para número e formata como moeda
     const numericValue = parseInt(inputValue) || 0
     const formattedValue = (numericValue / 100).toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     })
-    
+
     onChange(formattedValue)
   }
 
@@ -33,8 +33,8 @@ export function CurrencyInput({ value, onChange, placeholder, error }: CurrencyI
         onChange={handleChange}
         placeholder={placeholder}
         className={cn(
-          "bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-400",
-          error && "border-red-500"
+          "bg-input border-border text-foreground placeholder-muted-foreground",
+          error && "border-destructive"
         )}
       />
       {error && (
