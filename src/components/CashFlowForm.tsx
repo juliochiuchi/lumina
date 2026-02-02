@@ -13,10 +13,9 @@ interface CashFlowFormProps {
   types: string[]
   onSubmit: (data: any) => void
   schema: z.ZodSchema
-  titleNotification: string
 }
 
-export function CashFlowForm({ title, titleNotification, icon, types, onSubmit, schema }: CashFlowFormProps) {
+export function CashFlowForm({ title, icon, types, onSubmit, schema }: CashFlowFormProps) {
   const [description, setDescription] = useState('')
   const [type, setType] = useState('')
   const [amount, setAmount] = useState('')
