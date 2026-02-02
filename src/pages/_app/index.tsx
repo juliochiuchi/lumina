@@ -292,7 +292,7 @@ function Index() {
                       </div>
                     </div>
 
-                    <DrawerFooter className="flex flex-col gap-2 pt-4 w-full">
+                    <DrawerFooter className="p-0 flex flex-col gap-2 pt-4 w-full">
                       <Button type="submit" disabled={isSubmitting} className="w-full bg-zinc-50 hover:bg-zinc-200 text-zinc-950">
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Salvar'}
                       </Button>
