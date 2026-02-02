@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { CurrencyInput } from '@/components/CurrencyInput'
 import { toast } from 'sonner'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
+import { GlobalLoading } from '@/components/ui/global-loading'
 
 export const Route = createFileRoute('/_app/')({
   component: Index,
@@ -166,6 +167,7 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 sm:p-8">
+      <GlobalLoading visible={loading} text="Carregando dados..." />
       <ConfirmationModal
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
@@ -335,7 +337,13 @@ function Index() {
         <div className="flex flex-wrap gap-4">
           {movements.length > 0 ? (
             movements.map((movement) => (
-              <Card key={movement.id} className="w-full md:w-[calc(50%-0.5rem)] lg:w-[calc(33.33%-0.7rem)] xl:w-[calc(25%-0.8rem)] bg-card border-border text-card-foreground hover:bg-accent/50 transition-colors">
+              <Card
+                key={movement.id}
+                className="w-full md:w-[calc(50%-0.5rem)] lg:w-[calc(33.33%-0.7rem)] xl:w-[calc(25%-0.8rem)] bg-card border-border text-card-foreground hover:bg-accent/50 transition-colors cursor-pointer"
+                onClick={() =>
+                  navigate({ to: '/cash_flow', search: { id: movement.id } })
+                }
+              >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     {movement.regard_month}
@@ -344,7 +352,10 @@ function Index() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
-                    onClick={() => handleDeleteClick(movement.id)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteClick(movement.id)
+                    }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

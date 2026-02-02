@@ -1,10 +1,16 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useState, useEffect, useMemo } from 'react'
 import { z } from 'zod'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowLeft } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, AlignmentType, WidthType, BorderStyle } from 'docx'
 import { saveAs } from 'file-saver'
+
+// Services
+import { categoriesService, type Category } from '@/services/categoriesService'
+import { cashFlowService, type CashFlow } from '@/services/cashFlowService'
+import { inflowsService, type Inflow } from '@/services/inflowsService'
+import { outflowsService, type Outflow } from '@/services/outflowsService'
 
 // Componentes extraídos
 import { CashFlowForm } from '@/components/CashFlowForm'
@@ -12,7 +18,10 @@ import { CashFlowTable } from '@/components/CashFlowTable'
 import { BalanceInput } from '@/components/BalanceInput'
 import { TypeSummary } from '@/components/TypeSummary'
 import { ExportButtons } from '@/components/ExportButtons'
+import { toast } from 'sonner'
 import { FinancialSummary } from '@/components/FinancialSummary'
+import { GlobalLoading } from '@/components/ui/global-loading'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/_app/cash_flow')({
   validateSearch: (search: Record<string, unknown>) => {
@@ -39,43 +48,9 @@ const exitSchema = z.object({
 type EntryData = z.infer<typeof entrySchema>
 type ExitData = z.infer<typeof exitSchema>
 
-// Tipos disponíveis
-const entryTypes = [
-  'Dízimo',
-  'Oferta',
-  'Oferta Construção',
-  'Aluguel',
-  'Resgate',
-  'Reembolso',
-  'Jantar Coordenadoria',
-  'Despesas Pastor',
-  'Tarifa Banco',
-  'Manutenção',
-  'Energia',
-  'Água',
-  'Limpeza',
-  'Contabilidade',
-  'AG',
-  'Presbitério Rio Preto',
-  'Internet',
-  'Missões',
-  'Ministérios',
-  'Mercado',
-  'Eventos',
-  'Lembranças',
-  'Equipamentos',
-  'Documentos Administrativos',
-  'Ajuda de Custo',
-  'Investimentos',
-  'Fúnebre',
-  'Aplicação Resgate',
-  'Entrada',
-]
-
-const exitTypes = [...entryTypes]
-
 function Index() {
   const { id } = Route.useSearch()
+  const navigate = useNavigate()
   const [currentMovementId, setCurrentMovementId] = useState<string | undefined>(id)
 
   useEffect(() => {
@@ -88,13 +63,29 @@ function Index() {
     }
   }, [currentMovementId])
 
-  const [entries, setEntries] = useState<(EntryData & { id: string; date: string })[]>([])
-  const [exits, setExits] = useState<(ExitData & { id: string; date: string })[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+
+  useEffect(() => {
+    setCategoriesLoading(true)
+    categoriesService.getAll()
+      .then(setCategories)
+      .catch(err => console.error('Erro ao buscar categorias:', err))
+      .finally(() => setCategoriesLoading(false))
+  }, [])
+
+  const categoryNames = categories.map(c => c.name)
+
+  const [rawInflows, setRawInflows] = useState<Inflow[]>([])
+  const [rawOutflows, setRawOutflows] = useState<Outflow[]>([])
   const [saldoInicial, setSaldoInicial] = useState<number>(0)
   const [saldoFinal, setSaldoFinal] = useState<number>(0)
   const [aplicacaoInvestimento, setAplicacaoInvestimento] = useState<number>(0)
   const [resgateAplicacao, setResgateAplicacao] = useState<number>(0)
-  const [isLoaded, setIsLoaded] = useState(false)
+  // Removido controle de localStorage
+  const [categoriesLoading, setCategoriesLoading] = useState<boolean>(false)
+  const [cashFlowLoading, setCashFlowLoading] = useState<boolean>(false)
+  const [inflowsLoading, setInflowsLoading] = useState<boolean>(false)
+  const [outflowsLoading, setOutflowsLoading] = useState<boolean>(false)
 
   // Estados para o mês e ano atual
   const [mesAtual, setMesAtual] = useState<string>('')
@@ -146,97 +137,232 @@ function Index() {
   }
 
   useEffect(() => {
-    calcularDatasDoMes() // calcular as datas quando o componente é montado
-    obterMesEAnoAtual() // obter mês e ano quando o componente é montado
-    loadFromLocalStorage() // carregar dados quando o componente é montado
-  }, [])
+    calcularDatasDoMes()
+    obterMesEAnoAtual()
 
-  // Calcular totais
+    if (currentMovementId) {
+      loadCashFlowData(currentMovementId)
+    }
+  }, [currentMovementId])
+
+  const loadCashFlowData = async (id: string) => {
+    setCashFlowLoading(true)
+    try {
+      const data = await cashFlowService.getById(id)
+      if (data) {
+        setSaldoInicial(data.initial_balance || 0)
+        setSaldoFinal(data.final_balance || 0)
+        setAplicacaoInvestimento(data.investment_application || 0)
+        setResgateAplicacao(data.redemption_application || 0)
+      }
+      await reloadInflows()
+      await reloadOutflows()
+    } catch (error) {
+      console.error('Erro ao carregar dados do fluxo de caixa:', error)
+    } finally {
+      setCashFlowLoading(false)
+    }
+  }
+
+  const handleUpdateBalance = async (field: keyof CashFlow, value: number) => {
+    // Atualiza o estado local
+    if (field === 'initial_balance') setSaldoInicial(value)
+    if (field === 'final_balance') setSaldoFinal(value)
+    if (field === 'investment_application') setAplicacaoInvestimento(value)
+    if (field === 'redemption_application') setResgateAplicacao(value)
+
+    // Se tiver ID, atualiza no banco
+    if (currentMovementId) {
+      try {
+        await cashFlowService.update(currentMovementId, { [field]: value })
+        toast.success('Valor atualizado com sucesso!')
+      } catch (error) {
+        console.error(`Erro ao atualizar ${field}:`, error)
+        toast.error('Erro ao atualizar valor. Tente novamente.')
+      }
+    }
+  }
+
+  // Resolução de categoria e mapeadores (declarados como function para evitar TDZ)
+  function getCategoryName(rawCategory: unknown): string {
+    if (!categories || categories.length === 0) return 'Categoria'
+
+    if (rawCategory && typeof rawCategory === 'object') {
+      const obj = rawCategory as { id?: unknown; name?: unknown; category?: unknown }
+      if (obj.id !== undefined) {
+        const byObjId = categories.find(c => String(c.id) === String(obj.id))
+        if (byObjId) return byObjId.name
+      }
+      if (obj.category !== undefined) {
+        const byObjCat = categories.find(c => String(c.id) === String(obj.category))
+        if (byObjCat) return byObjCat.name
+      }
+      if (typeof obj.name === 'string') {
+        const nameNorm = obj.name.toLowerCase().trim()
+        const byObjName = categories.find(c => c.name.toLowerCase().trim() === nameNorm)
+        if (byObjName) return byObjName.name
+      }
+    }
+
+    const normalized = String(rawCategory).trim()
+    const byId = categories.find(c => String(c.id) === normalized)
+    if (byId) return byId.name
+
+    const byName = categories.find(c => c.name.toLowerCase().trim() === normalized.toLowerCase())
+    return byName ? byName.name : 'Categoria'
+  }
+
+  function mapInflowToEntry(row: Inflow): (EntryData & { id: string; date: string }) {
+    return {
+      id: row.id,
+      description: row.description,
+      type: getCategoryName(row.category),
+      amount: row.inflow_value,
+      date: row.created_at ? new Date(row.created_at).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')
+    }
+  }
+
+  function mapOutflowToExit(row: Outflow): (ExitData & { id: string; date: string }) {
+    return {
+      id: row.id,
+      description: row.description,
+      type: getCategoryName(row.category),
+      amount: row.outflow_value,
+      date: row.created_at ? new Date(row.created_at).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')
+    }
+  }
+
+  const entries = useMemo(
+    () => rawInflows.map(mapInflowToEntry),
+    [rawInflows, categories]
+  )
+  const exits = useMemo(
+    () => rawOutflows.map(mapOutflowToExit),
+    [rawOutflows, categories]
+  )
   const totalEntries = entries.reduce((sum, entry) => sum + entry.amount, 0)
   const totalExits = exits.reduce((sum, exit) => sum + exit.amount, 0)
   const balance = totalEntries - totalExits
   const saldoMesComResgate = balance + resgateAplicacao
 
-  // Flag para controlar se os dados foram carregados
-  // Função para salvar dados no localStorage
-  const saveToLocalStorage = () => {
-    if (!isLoaded) return // Não salvar se ainda não carregou os dados
+  // Carregamento de entradas/saídas do Supabase
 
-    const data = {
-      entries,
-      exits,
-      saldoInicial,
-      saldoFinal,
-      aplicacaoInvestimento,
-      resgateAplicacao,
-      lastUpdated: new Date().toISOString()
-    }
-    localStorage.setItem('fluxoCaixaData', JSON.stringify(data))
-    console.log('Dados salvos no localStorage:', data)
-  }
-
-  // Função para carregar dados do localStorage
-  const loadFromLocalStorage = () => {
+  const reloadInflows = async () => {
+    if (!currentMovementId) return
     try {
-      const savedData = localStorage.getItem('fluxoCaixaData')
-      if (savedData) {
-        const data = JSON.parse(savedData)
-        console.log('Dados carregados do localStorage:', data)
-
-        setEntries(data.entries || [])
-        setExits(data.exits || [])
-        setSaldoInicial(data.saldoInicial || 0)
-        setSaldoFinal(data.saldoFinal || 0)
-        setAplicacaoInvestimento(data.aplicacaoInvestimento || 0)
-        setResgateAplicacao(data.resgateAplicacao || 0)
-      }
+      setInflowsLoading(true)
+      const rows = await inflowsService.listByCashFlow(currentMovementId)
+      setRawInflows(rows)
     } catch (error) {
-      console.error('Erro ao carregar dados do localStorage:', error)
+      console.error('Erro ao carregar entradas:', error)
+      toast.error('Erro ao carregar entradas')
     } finally {
-      setIsLoaded(true) // Marcar como carregado independentemente do resultado
+      setInflowsLoading(false)
     }
   }
 
-  // Salvar dados sempre que houver mudanças
+  const reloadOutflows = async () => {
+    if (!currentMovementId) return
+    try {
+      setOutflowsLoading(true)
+      const rows = await outflowsService.listByCashFlow(currentMovementId)
+      setRawOutflows(rows)
+    } catch (error) {
+      console.error('Erro ao carregar saídas:', error)
+      toast.error('Erro ao carregar saídas')
+    } finally {
+      setOutflowsLoading(false)
+    }
+  }
+
   useEffect(() => {
-    saveToLocalStorage()
-  }, [entries, exits, saldoInicial, saldoFinal, aplicacaoInvestimento, resgateAplicacao, isLoaded])
-
-  const handleAddEntry = (data: EntryData) => {
-    const newEntry = {
-      ...data,
-      id: Date.now().toString(),
-      date: new Date().toLocaleDateString('pt-BR')
+    if (currentMovementId) {
+      reloadInflows()
+      reloadOutflows()
     }
-    setEntries([...entries, newEntry])
-  }
+  }, [categories, currentMovementId])
 
-  const handleAddExit = (data: ExitData) => {
-    const newExit = {
-      ...data,
-      id: Date.now().toString(),
-      date: new Date().toLocaleDateString('pt-BR')
+  const handleAddEntry = async (data: EntryData) => {
+    if (!currentMovementId) {
+      toast.error('Crie um fluxo de caixa antes de adicionar entradas.')
+      return
     }
-    setExits([...exits, newExit])
+    const category = categories.find(c => c.name === data.type)
+    if (!category) {
+      toast.error('Categoria inválida para entrada.')
+      return
+    }
+    try {
+      await inflowsService.create({
+        cash_flow: currentMovementId,
+        category: category.id,
+        description: data.description,
+        inflow_value: data.amount
+      })
+      toast.success('Entrada adicionada com sucesso!')
+      await reloadInflows()
+    } catch (error) {
+      console.error('Erro ao adicionar entrada:', error)
+      toast.error('Erro ao adicionar entrada. Tente novamente.')
+    }
   }
 
-  const handleDeleteEntry = (id: string) => {
-    setEntries(entries.filter(entry => entry.id !== id))
+  const handleAddExit = async (data: ExitData) => {
+    if (!currentMovementId) {
+      toast.error('Crie um fluxo de caixa antes de adicionar saídas.')
+      return
+    }
+    const category = categories.find(c => c.name === data.type)
+    if (!category) {
+      toast.error('Categoria inválida para saída.')
+      return
+    }
+    try {
+      await outflowsService.create({
+        cash_flow: currentMovementId,
+        category: category.id,
+        description: data.description,
+        outflow_value: data.amount
+      })
+      toast.success('Saída adicionada com sucesso!')
+      await reloadOutflows()
+    } catch (error) {
+      console.error('Erro ao adicionar saída:', error)
+      toast.error('Erro ao adicionar saída. Tente novamente.')
+    }
   }
 
-  const handleDeleteExit = (id: string) => {
-    setExits(exits.filter(exit => exit.id !== id))
+  const handleDeleteEntry = async (id: string) => {
+    try {
+      await inflowsService.delete(id)
+      toast.success('Entrada excluída com sucesso!')
+      await reloadInflows()
+    } catch (error) {
+      console.error('Erro ao excluir entrada:', error)
+      toast.error('Erro ao excluir entrada. Tente novamente.')
+    }
+  }
+
+  const handleDeleteExit = async (id: string) => {
+    try {
+      await outflowsService.delete(id)
+      toast.success('Saída excluída com sucesso!')
+      await reloadOutflows()
+    } catch (error) {
+      console.error('Erro ao excluir saída:', error)
+      toast.error('Erro ao excluir saída. Tente novamente.')
+    }
   }
 
   const handleRestart = () => {
-    if (window.confirm('Tem certeza que deseja reiniciar? Todos os dados serão perdidos.')) {
-      setEntries([])
-      setExits([])
+    if (window.confirm('Tem certeza que deseja reiniciar?')) {
+      setRawInflows([])
+      setRawOutflows([])
       setSaldoInicial(0)
       setSaldoFinal(0)
       setAplicacaoInvestimento(0)
       setResgateAplicacao(0)
-      localStorage.removeItem('fluxoCaixaData')
+      navigate({ to: '/' })
     }
   }
 
@@ -1018,13 +1144,27 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <GlobalLoading visible={categoriesLoading || cashFlowLoading} text="Carregando dados..." />
       <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
-        <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-4xl font-bold mb-2 font-poppins tracking-widest">LUMINA</h1>
-          <p className="text-zinc-400 text-sm sm:text-base">Controle de Fluxo de Caixa - Gerencie suas entradas e saídas financeiras</p>
+        <div className="mb-6 sm:mb-8">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para Home
+          </Link>
         </div>
 
-        <FinancialSummary totalEntries={totalEntries} totalExits={totalExits} balance={balance} />
+        {inflowsLoading || outflowsLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Skeleton className="h-24 rounded-xl" />
+            <Skeleton className="h-24 rounded-xl" />
+            <Skeleton className="h-24 rounded-xl" />
+          </div>
+        ) : (
+          <FinancialSummary totalEntries={totalEntries} totalExits={totalExits} balance={balance} />
+        )}
 
         {/* Formulários e tabelas - lado a lado em telas grandes, empilhados em pequenas */}
         <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 mb-6 sm:mb-8 w-full">
@@ -1033,11 +1173,27 @@ function Index() {
               title="Adicionar Entrada"
               titleNotification="Entrada"
               icon={<TrendingUp className="h-5 w-5 text-green-400" />}
-              types={entryTypes}
+              types={categoryNames}
               onSubmit={handleAddEntry}
               schema={entrySchema}
             />
-            <CashFlowTable title="Entradas Registradas" data={entries} onDelete={handleDeleteEntry} />
+            {inflowsLoading ? (
+              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 overflow-hidden">
+                <div className="p-6 border-b border-zinc-800/50">
+                  <div className="flex justify-between items-center">
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-8 w-32" />
+                  </div>
+                </div>
+                <div className="p-4 space-y-3">
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              </div>
+            ) : (
+              <CashFlowTable title="Entradas Registradas" data={entries} onDelete={handleDeleteEntry} variant="entry" />
+            )}
           </div>
 
           <div className="flex-1 space-y-6">
@@ -1045,11 +1201,27 @@ function Index() {
               title="Adicionar Saída"
               titleNotification="Saída"
               icon={<TrendingDown className="h-5 w-5 text-red-400" />}
-              types={exitTypes}
+              types={categoryNames}
               onSubmit={handleAddExit}
               schema={exitSchema}
             />
-            <CashFlowTable title="Saídas Registradas" data={exits} onDelete={handleDeleteExit} />
+            {outflowsLoading ? (
+              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 overflow-hidden">
+                <div className="p-6 border-b border-zinc-800/50">
+                  <div className="flex justify-between items-center">
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-8 w-32" />
+                  </div>
+                </div>
+                <div className="p-4 space-y-3">
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              </div>
+            ) : (
+              <CashFlowTable title="Saídas Registradas" data={exits} onDelete={handleDeleteExit} variant="exit" />
+            )}
           </div>
         </div>
 
@@ -1058,40 +1230,66 @@ function Index() {
           <BalanceInput
             label="Saldo Inicial"
             value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldoInicial)}
-            onSave={setSaldoInicial}
+            onSave={(value) => handleUpdateBalance('initial_balance', value)}
           />
           <BalanceInput
             label="Saldo Final"
             value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldoFinal)}
-            onSave={setSaldoFinal}
+            onSave={(value) => handleUpdateBalance('final_balance', value)}
           />
           <BalanceInput
             label="Aplicação Investimento"
             value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(aplicacaoInvestimento)}
-            onSave={setAplicacaoInvestimento}
+            onSave={(value) => handleUpdateBalance('investment_application', value)}
           />
           <BalanceInput
             label="Resgate Aplicação"
             value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(resgateAplicacao)}
-            onSave={setResgateAplicacao}
+            onSave={(value) => handleUpdateBalance('redemption_application', value)}
           />
         </div>
 
         {/* Resumos por categoria - lado a lado em telas grandes, empilhados em pequenas */}
         <div className="flex flex-col lg:flex-row gap-6 mb-6 sm:mb-8">
           <div className="flex-1">
-            <TypeSummary
-              title="Resumo de Entradas por Categoria"
-              data={entries}
-              icon={<TrendingUp className="h-5 w-5 text-green-400" />}
-            />
+            {inflowsLoading ? (
+              <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
+                <div className="flex items-center gap-3 mb-4">
+                  <Skeleton className="h-6 w-64" />
+                </div>
+                <div className="space-y-3">
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                </div>
+              </div>
+            ) : (
+              <TypeSummary
+                title="Resumo de Entradas por Categoria"
+                data={entries}
+                icon={<TrendingUp className="h-5 w-5 text-green-400" />}
+              />
+            )}
           </div>
           <div className="flex-1">
-            <TypeSummary
-              title="Resumo de Saídas por Categoria"
-              data={exits}
-              icon={<TrendingDown className="h-5 w-5 text-red-400" />}
-            />
+            {outflowsLoading ? (
+              <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
+                <div className="flex items-center gap-3 mb-4">
+                  <Skeleton className="h-6 w-64" />
+                </div>
+                <div className="space-y-3">
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                </div>
+              </div>
+            ) : (
+              <TypeSummary
+                title="Resumo de Saídas por Categoria"
+                data={exits}
+                icon={<TrendingDown className="h-5 w-5 text-red-400" />}
+              />
+            )}
           </div>
         </div>
 

@@ -43,15 +43,6 @@ export function CashFlowForm({ title, titleNotification, icon, types, onSubmit, 
       const validatedData = schema.parse(formData)
       onSubmit(validatedData)
 
-      // Notificação de sucesso
-      toast.success(`${titleNotification} adicionada com sucesso!`, {
-        description: `${description} - ${new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(numericAmount)}`,
-        duration: 3000,
-      })
-
       // Limpar formulário
       setDescription('')
       setType('')

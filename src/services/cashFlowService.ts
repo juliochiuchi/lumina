@@ -25,10 +25,39 @@ export const cashFlowService = {
     return data as CashFlow[]
   },
 
+  async getById(id: string) {
+    const { data, error } = await supabase
+      .from('cash_flows')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return data as CashFlow
+  },
+
   async create(cashFlow: Omit<CashFlow, 'id'>) {
     const { data, error } = await supabase
       .from('cash_flows')
       .insert(cashFlow)
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return data as CashFlow
+  },
+
+  async update(id: string, cashFlow: Partial<CashFlow>) {
+    const { data, error } = await supabase
+      .from('cash_flows')
+      .update(cashFlow)
+      .eq('id', id)
       .select()
       .single()
 

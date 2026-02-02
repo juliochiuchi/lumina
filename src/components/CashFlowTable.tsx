@@ -5,21 +5,23 @@ interface CashFlowTableProps {
   title: string
   data: Array<{ id: string; description: string; type: string; amount: number; date: string }>
   onDelete: (id: string) => void
+  variant?: 'entry' | 'exit'
 }
 
-export function CashFlowTable({ title, data, onDelete }: CashFlowTableProps) {
+export function CashFlowTable({ title, data, onDelete, variant = 'entry' }: CashFlowTableProps) {
   const total = data.reduce((sum, item) => sum + item.amount, 0)
+  const dotColorClass = variant === 'entry' ? 'bg-[#4ade80]' : 'bg-[#f87171]'
 
   if (data.length === 0) {
     return (
       <div className="bg-zinc-900/50 backdrop-blur-sm p-8 rounded-xl border border-zinc-800/50">
         <h3 className="text-xl font-semibold text-zinc-100 mb-6 flex items-center gap-2">
-          <DollarSign className="h-5 w-5 text-zinc-400" />
+          <DollarSign className="h-5 w-5 text-[#60a5fa]" />
           {title}
         </h3>
         <div className="text-center py-12">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-zinc-800/50 flex items-center justify-center">
-            <DollarSign className="h-8 w-8 text-zinc-600" />
+            <DollarSign className="h-8 w-8 text-[#60a5fa]" />
           </div>
           <p className="text-zinc-400 text-lg">Nenhum registro encontrado</p>
           <p className="text-zinc-500 text-sm mt-1">Adicione o primeiro registro para começar</p>
@@ -33,7 +35,7 @@ export function CashFlowTable({ title, data, onDelete }: CashFlowTableProps) {
       <div className="p-6 border-b border-zinc-800/50">
         <div className="flex justify-between items-center">
           <h3 className="text-xl font-semibold text-zinc-100 flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-zinc-400" />
+            <DollarSign className="h-5 w-5 text-[#60a5fa]" />
             {title}
           </h3>
           <div className="px-4 py-2 bg-zinc-800/50 rounded-lg">
@@ -58,7 +60,7 @@ export function CashFlowTable({ title, data, onDelete }: CashFlowTableProps) {
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0"></div>
+                    <div className={`w-2 h-2 rounded-full ${dotColorClass} flex-shrink-0`}></div>
                     <h4 className="text-zinc-100 font-medium truncate">{item.description}</h4>
                   </div>
                   

@@ -14,12 +14,12 @@ export function SearchableSelect({ options, value, onChange, placeholder, error 
     <div className="space-y-1">
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger className={cn(
-          "bg-input border-border text-foreground",
+          "bg-input text-foreground border-none focus:ring-0 shadow-none",
           error && "border-destructive"
         )}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent className="bg-popover border-border">
+        <SelectContent className="bg-popover border-none shadow-none">
           {options.map((option) => (
             <SelectItem 
               key={option} 
