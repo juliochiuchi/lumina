@@ -179,13 +179,13 @@ function Index() {
         isLoading={isDeleting}
       />
       <div className="container mx-auto max-w-7xl space-y-8">
-        <div className="flex flex-col space-y-4 md:flex-row md:items-end md:justify-between md:space-y-0">
-          <h1 className="text-3xl font-bold tracking-tight text-white">Movimentos de Caixa</h1>
+        <div className="flex flex-col items-center space-y-4 lg:flex-row lg:items-end md:justify-between md:space-y-0">
+          <h1 className="mb-4 text-3xl font-bold tracking-tight text-white text-center lg:text-left lg:mb-0">Movimentos de Caixa</h1>
 
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
+          <div className="flex flex-col gap-4 items-center w-full lg:items-end lg:w-auto lg:flex-row">
             <Drawer direction="top" open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
               <DrawerTrigger asChild>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white w-full max-w-sm lg:w-auto lg:max-w-none">
                   <Plus className="mr-2 h-4 w-4" /> Novo Movimento
                 </Button>
               </DrawerTrigger>
@@ -305,7 +305,7 @@ function Index() {
               </DrawerContent>
             </Drawer>
 
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full max-w-sm items-end space-x-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full max-w-sm flex-col gap-2 lg:flex-row sm:items-end sm:gap-4">
               <div className="w-full space-y-2">
                 <Label htmlFor="year" className="text-zinc-200">Filtrar por Ano</Label>
                 <Controller
@@ -327,14 +327,14 @@ function Index() {
                   )}
                 />
               </div>
-              <Button type="submit" disabled={loading} className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200">
+              <Button type="submit" disabled={loading} className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200 w-full lg:w-auto">
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Filtrar'}
               </Button>
             </form>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-4">
+        <div className="pt-8 flex flex-wrap gap-4 justify-center lg:justify-start lg:pt-0">
           {movements.length > 0 ? (
             movements.map((movement) => (
               <Card
