@@ -1,5 +1,6 @@
 import { HeadContent, Outlet, createRootRoute } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
+import { Footer } from "@/components/Footer";
 
 export const Route = createRootRoute({
   component: RootComponent
@@ -7,10 +8,13 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <HeadContent />
-      <Outlet />
+      <div className="flex-1">
+        <Outlet />
+      </div>
+      <Footer />
       <Toaster />
-    </>
+    </div>
   ) 
 }
