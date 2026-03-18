@@ -7,7 +7,9 @@ import { CategoryPieChart } from '@/components/CategoryPieChart'
 import { FinancialSummary } from '@/components/FinancialSummary'
 import { GlobalLoading } from '@/components/ui/global-loading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Download } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { exportAccountabilityToExcel } from '@/utils/exportAccountability'
 
 export const Route = createFileRoute('/_app/accountability')({
   component: AccountabilityPage,
@@ -16,6 +18,7 @@ export const Route = createFileRoute('/_app/accountability')({
 function AccountabilityPage() {
   const [movements, setMovements] = useState<CashFlowWithMovements[]>([])
   const [loading, setLoading] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   // Use current year as default
   const currentYear = new Date().getFullYear().toString()
@@ -82,7 +85,23 @@ function AccountabilityPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-4 w-full lg:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                setIsExporting(true)
+                try {
+                  await exportAccountabilityToExcel(movements, selectedYear)
+                } finally {
+                  setIsExporting(false)
+                }
+              }}
+              disabled={loading || isExporting || movements.length === 0}
+              className="w-full sm:w-auto bg-card border-border text-foreground hover:bg-zinc-800"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {isExporting ? 'Exportando...' : 'Exportar Excel'}
+            </Button>
             <div className="w-full lg:w-48">
               <Select value={selectedYear} onValueChange={setSelectedYear}>
                 <SelectTrigger className="bg-card border-border text-foreground">
