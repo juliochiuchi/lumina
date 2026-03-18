@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { CurrencyInput } from '@/components/CurrencyInput'
 import { toast } from 'sonner'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
+import { AccessModal } from '@/components/ui/access-modal'
 import { GlobalLoading } from '@/components/ui/global-loading'
 
 export const Route = createFileRoute('/_app/')({
@@ -53,6 +54,7 @@ function Index() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [movementToDelete, setMovementToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isAccessGranted, setIsAccessGranted] = useState(false)
 
   const form = useForm<FilterFormValues>({
     resolver: zodResolver(filterSchema),
@@ -95,8 +97,10 @@ function Index() {
 
   // Fetch initial data on mount with default year
   useEffect(() => {
-    fetchMovements(form.getValues())
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    if (isAccessGranted) {
+      fetchMovements(form.getValues())
+    }
+  }, [isAccessGranted]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const onSubmit = (data: FilterFormValues) => {
     fetchMovements(data)
@@ -163,6 +167,10 @@ function Index() {
   const handleDeleteClick = (id: string) => {
     setMovementToDelete(id)
     setDeleteModalOpen(true)
+  }
+
+  if (!isAccessGranted) {
+    return <AccessModal isOpen={true} onSuccess={() => setIsAccessGranted(true)} />
   }
 
   return (
