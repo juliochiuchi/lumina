@@ -32,7 +32,7 @@ const createMovementSchema = z.object({
   investment_application: z.string().min(1, "Aplicação investimento é obrigatório"),
   redemption_application: z.string().min(1, "Resgate aplicação é obrigatório"),
   regard_month: z.string().min(1, "Mês é obrigatório"),
-  year: z.string()
+  year: z.string().min(4, "Selecione um ano"),
 })
 
 type FilterFormValues = z.infer<typeof filterSchema>
@@ -70,7 +70,7 @@ function Index() {
       investment_application: 'R$ 0,00',
       redemption_application: 'R$ 0,00',
       regard_month: '',
-      year: new Date().getFullYear().toString()
+      year: '',
     }
   })
 
@@ -206,12 +206,30 @@ function Index() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Ano</Label>
-                        <Input {...createForm.register("year")} disabled className="bg-muted border-border text-muted-foreground cursor-not-allowed opacity-50" />
+                        <Label htmlFor="year" className="text-zinc-200">Ano (referência)</Label>
+                        <Controller
+                          control={createForm.control}
+                          name="year"
+                          render={({ field }) => (
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <SelectTrigger className="bg-input border-border">
+                                <SelectValue placeholder="Selecione o ano" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-popover border-border text-popover-foreground">
+                                {years.map((year) => (
+                                  <SelectItem key={year} value={year} className="focus:bg-muted focus:text-zinc-50 cursor-pointer">
+                                    {year}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                        {createForm.formState.errors.year && <p className="text-red-400 text-sm">{createForm.formState.errors.year.message}</p>}
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Mês Referência</Label>
+                        <Label>Mês (referência)</Label>
                         <Controller
                           control={createForm.control}
                           name="regard_month"
@@ -304,6 +322,15 @@ function Index() {
                 </div>
               </DrawerContent>
             </Drawer>
+
+            <Button
+              className="bg-zinc-900 border hover:bg-zinc-900 border-zinc-800 text-white w-full max-w-sm lg:w-auto lg:max-w-none"
+              onClick={() => {
+                navigate({ to: '/accountability' })
+              }}
+            >
+              Prestação de Contas
+            </Button>
 
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full max-w-sm flex-col gap-2 lg:flex-row sm:items-end sm:gap-4">
               <div className="w-full space-y-2">

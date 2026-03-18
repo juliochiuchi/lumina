@@ -13,6 +13,7 @@ import { Route as AuthLayoutRouteImport } from './pages/_auth/layout'
 import { Route as AppLayoutRouteImport } from './pages/_app/layout'
 import { Route as AppIndexRouteImport } from './pages/_app/index'
 import { Route as AppCash_flowRouteImport } from './pages/_app/cash_flow'
+import { Route as AppAccountabilityRouteImport } from './pages/_app/accountability'
 
 const AuthLayoutRoute = AuthLayoutRouteImport.update({
   id: '/_auth',
@@ -32,12 +33,19 @@ const AppCash_flowRoute = AppCash_flowRouteImport.update({
   path: '/cash_flow',
   getParentRoute: () => AppLayoutRoute,
 } as any)
+const AppAccountabilityRoute = AppAccountabilityRouteImport.update({
+  id: '/accountability',
+  path: '/accountability',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
+  '/accountability': typeof AppAccountabilityRoute
   '/cash_flow': typeof AppCash_flowRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
+  '/accountability': typeof AppAccountabilityRoute
   '/cash_flow': typeof AppCash_flowRoute
   '/': typeof AppIndexRoute
 }
@@ -45,15 +53,22 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppLayoutRouteWithChildren
   '/_auth': typeof AuthLayoutRoute
+  '/_app/accountability': typeof AppAccountabilityRoute
   '/_app/cash_flow': typeof AppCash_flowRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/cash_flow' | '/'
+  fullPaths: '/accountability' | '/cash_flow' | '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/cash_flow' | '/'
-  id: '__root__' | '/_app' | '/_auth' | '/_app/cash_flow' | '/_app/'
+  to: '/accountability' | '/cash_flow' | '/'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/_auth'
+    | '/_app/accountability'
+    | '/_app/cash_flow'
+    | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -91,15 +106,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCash_flowRouteImport
       parentRoute: typeof AppLayoutRoute
     }
+    '/_app/accountability': {
+      id: '/_app/accountability'
+      path: '/accountability'
+      fullPath: '/accountability'
+      preLoaderRoute: typeof AppAccountabilityRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
   }
 }
 
 interface AppLayoutRouteChildren {
+  AppAccountabilityRoute: typeof AppAccountabilityRoute
   AppCash_flowRoute: typeof AppCash_flowRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppLayoutRouteChildren: AppLayoutRouteChildren = {
+  AppAccountabilityRoute: AppAccountabilityRoute,
   AppCash_flowRoute: AppCash_flowRoute,
   AppIndexRoute: AppIndexRoute,
 }
