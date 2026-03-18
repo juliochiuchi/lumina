@@ -21,6 +21,7 @@ export const exportAccountabilityToExcel = async (data: CashFlowWithMovements[],
   // 1. Aggregate Inflows by Category
   const inflowCategories: Record<string, number> = {}
   let totalInflow = 0
+  let totalRedemption = 0
 
   data.forEach((monthData) => {
     monthData.inflows.forEach((inflow) => {
@@ -29,7 +30,16 @@ export const exportAccountabilityToExcel = async (data: CashFlowWithMovements[],
       inflowCategories[categoryName] = (inflowCategories[categoryName] || 0) + value
       totalInflow += value
     })
+    
+    if (monthData.redemption_application && Number(monthData.redemption_application) > 0) {
+      const redemptionValue = Number(monthData.redemption_application)
+      totalRedemption += redemptionValue
+    }
   })
+
+  if (totalRedemption > 0) {
+    inflowCategories['Resgate Aplicação'] = totalRedemption
+  }
 
   // 2. Aggregate Outflows by Category
   const outflowCategories: Record<string, number> = {}
@@ -57,7 +67,7 @@ export const exportAccountabilityToExcel = async (data: CashFlowWithMovements[],
   Object.entries(inflowCategories).forEach(([category, value]) => {
     wsData.push([category, formatCurrency(value)])
   })
-  wsData.push(['Total de Entradas', formatCurrency(totalInflow)])
+  wsData.push(['Total de Entradas', formatCurrency(totalInflow + totalRedemption)])
   wsData.push(['']) // Empty row
 
   // Add Outflow Categories
@@ -70,9 +80,9 @@ export const exportAccountabilityToExcel = async (data: CashFlowWithMovements[],
   wsData.push(['']) // Empty row
 
   // Add Summary
-  const balance = totalInflow - totalOutflow
+  const balance = (totalInflow + totalRedemption) - totalOutflow
   wsData.push(['RESUMO ANUAL'])
-  wsData.push(['Total Entradas', formatCurrency(totalInflow)])
+  wsData.push(['Total Entradas', formatCurrency(totalInflow + totalRedemption)])
   wsData.push(['Total Saídas', formatCurrency(totalOutflow)])
   wsData.push(['Saldo Final', formatCurrency(balance)])
 
