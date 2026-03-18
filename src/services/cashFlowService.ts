@@ -11,7 +11,25 @@ export type CashFlow = {
   year: string
 }
 
+export type CashFlowWithMovements = CashFlow & {
+  inflows: { inflow_value: number }[]
+  outflows: { outflow_value: number }[]
+}
+
 export const cashFlowService = {
+  async getByYearWithMovements(year: string) {
+    const { data, error } = await supabase
+      .from('cash_flows')
+      .select('*, inflows(inflow_value), outflows(outflow_value)')
+      .eq('year', year)
+
+    if (error) {
+      throw error
+    }
+
+    return data as CashFlowWithMovements[]
+  },
+
   async getByYear(year: string) {
     const { data, error } = await supabase
       .from('cash_flows')

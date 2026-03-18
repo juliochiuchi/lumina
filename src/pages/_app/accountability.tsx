@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { cashFlowService, type CashFlow } from '@/services/cashFlowService'
+import { cashFlowService, type CashFlowWithMovements } from '@/services/cashFlowService'
 import { CashBalanceChart } from '@/components/CashBalanceChart'
+import { CashInOutBarChart } from '@/components/CashInOutBarChart'
 import { GlobalLoading } from '@/components/ui/global-loading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -10,7 +11,7 @@ export const Route = createFileRoute('/_app/accountability')({
 })
 
 function AccountabilityPage() {
-  const [movements, setMovements] = useState<CashFlow[]>([])
+  const [movements, setMovements] = useState<CashFlowWithMovements[]>([])
   const [loading, setLoading] = useState(false)
 
   // Use current year as default
@@ -28,7 +29,7 @@ function AccountabilityPage() {
   const fetchMovements = async (year: string) => {
     setLoading(true)
     try {
-      const result = await cashFlowService.getByYear(year)
+      const result = await cashFlowService.getByYearWithMovements(year)
       setMovements(result || [])
     } catch (err) {
       console.error('Unexpected error fetching cash flows:', err)
@@ -74,7 +75,7 @@ function AccountabilityPage() {
 
         <div className="grid grid-cols-1 gap-6">
           <CashBalanceChart data={movements} year={selectedYear} />
-          {/* Futuros gráficos podem ser adicionados aqui */}
+          <CashInOutBarChart data={movements} year={selectedYear} />
         </div>
       </div>
     </div>
