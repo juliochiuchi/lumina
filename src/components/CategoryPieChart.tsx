@@ -38,11 +38,11 @@ export function CategoryPieChart({ data, year }: CategoryPieChartProps) {
       .catch(err => console.error("Erro ao buscar categorias no CategoryPieChart:", err))
   }, [])
 
-  const getCategoryName = (idOrName: string) => {
+  const getCategoryName = useMemo(() => (idOrName: string) => {
     if (!idOrName) return "Sem Categoria"
     const cat = categories.find(c => c.id === idOrName)
     return cat ? cat.name : idOrName
-  }
+  }, [categories])
 
   const chartData = useMemo(() => {
     const monthFlows = data.filter(d => d.regard_month === selectedMonth)
@@ -50,11 +50,17 @@ export function CategoryPieChart({ data, year }: CategoryPieChartProps) {
     const categoryTotals: Record<string, number> = {}
 
     monthFlows.forEach(flow => {
-      if (flowType === "inflows" && flow.inflows) {
-        flow.inflows.forEach(inflow => {
-          const cat = getCategoryName(inflow.category)
-          categoryTotals[cat] = (categoryTotals[cat] || 0) + Number(inflow.inflow_value)
-        })
+      if (flowType === "inflows") {
+        if (flow.inflows) {
+          flow.inflows.forEach(inflow => {
+            const cat = getCategoryName(inflow.category)
+            categoryTotals[cat] = (categoryTotals[cat] || 0) + Number(inflow.inflow_value)
+          })
+        }
+        if (flow.redemption_application && Number(flow.redemption_application) > 0) {
+          const cat = "Resgate Aplicação"
+          categoryTotals[cat] = (categoryTotals[cat] || 0) + Number(flow.redemption_application)
+        }
       } else if (flowType === "outflows" && flow.outflows) {
         flow.outflows.forEach(outflow => {
           const cat = getCategoryName(outflow.category)
@@ -64,9 +70,17 @@ export function CategoryPieChart({ data, year }: CategoryPieChartProps) {
     })
 
     return Object.entries(categoryTotals)
-      .map(([category, value]) => ({ category, value }))
+      .map(([category, value]) => {
+        const id = category.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase()
+        return { category, value, id }
+      })
       .sort((a, b) => b.value - a.value)
-  }, [data, selectedMonth, flowType, categories])
+      .map((item, index) => ({
+        ...item,
+        fill: `var(--color-${item.id})`,
+        colorHex: COLORS[index % COLORS.length]
+      }))
+  }, [data, selectedMonth, flowType, getCategoryName])
 
   const totalValue = useMemo(() => {
     return chartData.reduce((acc, curr) => acc + curr.value, 0)
@@ -88,10 +102,10 @@ export function CategoryPieChart({ data, year }: CategoryPieChartProps) {
       },
     }
 
-    chartData.forEach((item, index) => {
-      config[item.category] = {
+    chartData.forEach((item) => {
+      config[item.id] = {
         label: item.category,
-        color: COLORS[index % COLORS.length]
+        color: item.colorHex
       }
     })
 
@@ -142,25 +156,34 @@ export function CategoryPieChart({ data, year }: CategoryPieChartProps) {
                 content={
                   <ChartTooltipContent
                     hideLabel
-                    formatter={(value: unknown, name: unknown) => (
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{String(name)}:</span>
-                        <span>{formatCurrency(Number(value))}</span>
-                      </div>
-                    )}
+                    formatter={(value: unknown, name: unknown, item: { payload?: { id?: string; fill?: string }; color?: string }) => {
+                      const id = item?.payload?.id || String(name)
+                      const label = chartConfig[id]?.label || String(name)
+                      return (
+                        <div className="flex items-center justify-between w-full gap-4">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: item?.color || item?.payload?.fill }} />
+                            <span className="text-muted-foreground">{label}</span>
+                          </div>
+                          <span className="font-mono font-medium tabular-nums text-foreground">
+                            {formatCurrency(Number(value))}
+                          </span>
+                        </div>
+                      )
+                    }}
                   />
                 }
               />
               <Pie
                 data={chartData}
                 dataKey="value"
-                nameKey="category"
+                nameKey="id"
                 innerRadius={80}
                 strokeWidth={2}
                 stroke="hsl(var(--card))"
               >
                 {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}
                 <Label
                   content={({ viewBox }) => {

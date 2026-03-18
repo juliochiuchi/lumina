@@ -53,6 +53,10 @@ function AccountabilityPage() {
     return acc + inflowSum
   }, 0)
 
+  const totalRedemptions = movements.reduce((acc, curr) => {
+    return acc + Number(curr.redemption_application || 0)
+  }, 0)
+
   const totalExits = movements.reduce((acc, curr) => {
     const outflowSum = curr.outflows?.reduce((sum, outflow) => sum + Number(outflow.outflow_value), 0) || 0
     return acc + outflowSum
@@ -121,6 +125,8 @@ function AccountabilityPage() {
           totalEntries={totalEntries}
           totalExits={totalExits}
           balance={balance}
+          totalEntriesWithRedemption={totalEntries + totalRedemptions}
+          balanceWithRedemption={balance + totalRedemptions}
           balanceTitle="Saldo do Ano"
         />
 

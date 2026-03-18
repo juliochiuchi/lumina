@@ -26,6 +26,9 @@ export function CashInOutBarChart({ data, year }: CashInOutBarChartProps) {
         if (flow.inflows) {
           totalInflows += flow.inflows.reduce((acc, curr) => acc + Number(curr.inflow_value), 0)
         }
+        if (flow.redemption_application) {
+          totalInflows += Number(flow.redemption_application)
+        }
         if (flow.outflows) {
           totalOutflows += flow.outflows.reduce((acc, curr) => acc + Number(curr.outflow_value), 0)
         }
