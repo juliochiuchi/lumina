@@ -2,24 +2,18 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useAuth } from "@/contexts/use-auth"
 
-interface AccessModalProps {
-  isOpen: boolean
-  onSuccess: () => void
-}
-
-export function AccessModal({ isOpen, onSuccess }: AccessModalProps) {
+export function AccessModal() {
+  const { login } = useAuth()
   const [code, setCode] = useState('')
   const [error, setError] = useState(false)
 
-  if (!isOpen) return null
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const validCode = import.meta.env.VITE_ACCESS_CODE
-
-    if (code === validCode) {
-      onSuccess()
+    
+    if (login(code)) {
+      setError(false)
     } else {
       setError(true)
     }

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './pages/__root'
 import { Route as AuthLayoutRouteImport } from './pages/_auth/layout'
 import { Route as AppLayoutRouteImport } from './pages/_app/layout'
 import { Route as AppIndexRouteImport } from './pages/_app/index'
+import { Route as AppReceiptsRouteImport } from './pages/_app/receipts'
 import { Route as AppCash_flowRouteImport } from './pages/_app/cash_flow'
 import { Route as AppAccountabilityRouteImport } from './pages/_app/accountability'
 
@@ -28,6 +29,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppLayoutRoute,
 } as any)
+const AppReceiptsRoute = AppReceiptsRouteImport.update({
+  id: '/receipts',
+  path: '/receipts',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
 const AppCash_flowRoute = AppCash_flowRouteImport.update({
   id: '/cash_flow',
   path: '/cash_flow',
@@ -42,11 +48,13 @@ const AppAccountabilityRoute = AppAccountabilityRouteImport.update({
 export interface FileRoutesByFullPath {
   '/accountability': typeof AppAccountabilityRoute
   '/cash_flow': typeof AppCash_flowRoute
+  '/receipts': typeof AppReceiptsRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
   '/accountability': typeof AppAccountabilityRoute
   '/cash_flow': typeof AppCash_flowRoute
+  '/receipts': typeof AppReceiptsRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -55,19 +63,21 @@ export interface FileRoutesById {
   '/_auth': typeof AuthLayoutRoute
   '/_app/accountability': typeof AppAccountabilityRoute
   '/_app/cash_flow': typeof AppCash_flowRoute
+  '/_app/receipts': typeof AppReceiptsRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/accountability' | '/cash_flow' | '/'
+  fullPaths: '/accountability' | '/cash_flow' | '/receipts' | '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/accountability' | '/cash_flow' | '/'
+  to: '/accountability' | '/cash_flow' | '/receipts' | '/'
   id:
     | '__root__'
     | '/_app'
     | '/_auth'
     | '/_app/accountability'
     | '/_app/cash_flow'
+    | '/_app/receipts'
     | '/_app/'
   fileRoutesById: FileRoutesById
 }
@@ -99,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppLayoutRoute
     }
+    '/_app/receipts': {
+      id: '/_app/receipts'
+      path: '/receipts'
+      fullPath: '/receipts'
+      preLoaderRoute: typeof AppReceiptsRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
     '/_app/cash_flow': {
       id: '/_app/cash_flow'
       path: '/cash_flow'
@@ -119,12 +136,14 @@ declare module '@tanstack/react-router' {
 interface AppLayoutRouteChildren {
   AppAccountabilityRoute: typeof AppAccountabilityRoute
   AppCash_flowRoute: typeof AppCash_flowRoute
+  AppReceiptsRoute: typeof AppReceiptsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppLayoutRouteChildren: AppLayoutRouteChildren = {
   AppAccountabilityRoute: AppAccountabilityRoute,
   AppCash_flowRoute: AppCash_flowRoute,
+  AppReceiptsRoute: AppReceiptsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 

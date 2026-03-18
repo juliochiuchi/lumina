@@ -7,15 +7,15 @@ import { Button } from '@/components/ui/button'
 import { CurrencyInput } from './CurrencyInput'
 import { SearchableSelect } from './SearchableSelect'
 
-interface CashFlowFormProps {
+interface CashFlowFormProps<TSchema extends z.ZodTypeAny> {
   title: string
   icon: React.ReactNode
   types: string[]
-  onSubmit: (data: any) => void
-  schema: z.ZodSchema
+  onSubmit: (data: z.infer<TSchema>) => void
+  schema: TSchema
 }
 
-export function CashFlowForm({ title, icon, types, onSubmit, schema }: CashFlowFormProps) {
+export function CashFlowForm<TSchema extends z.ZodTypeAny>({ title, icon, types, onSubmit, schema }: CashFlowFormProps<TSchema>) {
   const [description, setDescription] = useState('')
   const [type, setType] = useState('')
   const [amount, setAmount] = useState('')

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { useForm, Controller } from 'react-hook-form'
@@ -8,13 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Loader2, Plus, Trash2 } from 'lucide-react'
+import { Cloud, FileChartPie, Filter, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerFooter, DrawerClose, DrawerDescription } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
 import { CurrencyInput } from '@/components/CurrencyInput'
 import { toast } from 'sonner'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
-import { AccessModal } from '@/components/ui/access-modal'
 import { GlobalLoading } from '@/components/ui/global-loading'
 
 export const Route = createFileRoute('/_app/')({
@@ -54,7 +53,6 @@ function Index() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [movementToDelete, setMovementToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [isAccessGranted, setIsAccessGranted] = useState(false)
 
   const form = useForm<FilterFormValues>({
     resolver: zodResolver(filterSchema),
@@ -97,10 +95,8 @@ function Index() {
 
   // Fetch initial data on mount with default year
   useEffect(() => {
-    if (isAccessGranted) {
-      fetchMovements(form.getValues())
-    }
-  }, [isAccessGranted]) // eslint-disable-line react-hooks/exhaustive-deps
+    fetchMovements(form.getValues())
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const onSubmit = (data: FilterFormValues) => {
     fetchMovements(data)
@@ -167,10 +163,6 @@ function Index() {
   const handleDeleteClick = (id: string) => {
     setMovementToDelete(id)
     setDeleteModalOpen(true)
-  }
-
-  if (!isAccessGranted) {
-    return <AccessModal isOpen={true} onSuccess={() => setIsAccessGranted(true)} />
   }
 
   return (
@@ -332,12 +324,27 @@ function Index() {
             </Drawer>
 
             <Button
+              asChild
               className="bg-zinc-900 border hover:bg-zinc-900 border-zinc-800 text-white w-full max-w-sm lg:w-auto lg:max-w-none"
-              onClick={() => {
-                navigate({ to: '/accountability' })
-              }}
             >
-              Prestação de Contas
+              <Link to="/accountability">
+                <FileChartPie className="h-4 w-4" />
+                Prestação de Contas
+              </Link>
+            </Button>
+
+            <Button
+              asChild
+              className="bg-zinc-900 border hover:bg-zinc-900 border-zinc-800 text-white w-full max-w-sm lg:w-auto lg:max-w-none"
+            >
+              <a
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://drive.google.com/drive/u/1/folders/15KgESYnFf3L28pjdFqKiNAxu7A9rFYE9"
+              >
+                <Cloud className="h-4 w-4" />
+                Recibos
+              </a>
             </Button>
 
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full max-w-sm flex-col gap-2 lg:flex-row sm:items-end sm:gap-4">
@@ -363,7 +370,12 @@ function Index() {
                 />
               </div>
               <Button type="submit" disabled={loading} className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200 w-full lg:w-auto">
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Filtrar'}
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Filter className="mr-2 h-4 w-4" />
+                )}
+                Filtrar
               </Button>
             </form>
           </div>

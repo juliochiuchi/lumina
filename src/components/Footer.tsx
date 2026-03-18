@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 
 export function Footer() {
   return (
-    <footer className="w-full border-t border-border bg-card py-6">
+    <footer className="w-full border-t border-border rounded-t-3xl bg-card py-6">
       <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 md:flex-row">
         <p className="text-center text-sm text-muted-foreground md:text-left whitespace-nowrap">
           &copy; {new Date().getFullYear()} Lumina. Todos os direitos reservados.
