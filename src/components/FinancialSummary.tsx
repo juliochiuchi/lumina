@@ -6,9 +6,10 @@ interface FinancialSummaryProps {
   balance: number
   totalEntriesWithRedemption?: number
   balanceWithRedemption?: number
+  balanceTitle?: string
 }
 
-export function FinancialSummary({ totalEntries, totalExits, balance, totalEntriesWithRedemption, balanceWithRedemption }: FinancialSummaryProps) {
+export function FinancialSummary({ totalEntries, totalExits, balance, totalEntriesWithRedemption, balanceWithRedemption, balanceTitle = "Saldo do Mês" }: FinancialSummaryProps) {
   return (
     <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 mb-6 sm:mb-8">
       <div className="bg-card p-4 sm:p-6 rounded-lg border border-border flex-1">
@@ -66,7 +67,7 @@ export function FinancialSummary({ totalEntries, totalExits, balance, totalEntri
               }`} />
           </div>
           <div className="min-w-0 flex flex-col">
-            <h3 className="text-xs sm:text-sm font-medium text-zinc-400">Saldo do Mês</h3>
+            <h3 className="text-xs sm:text-sm font-medium text-zinc-400">{balanceTitle}</h3>
             <div className="flex items-baseline gap-2 flex-wrap">
               <p className={`text-lg sm:text-2xl font-bold truncate ${balance >= 0 ? 'text-blue-400' : 'text-red-400'
                 }`}>

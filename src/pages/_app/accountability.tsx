@@ -1,10 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { cashFlowService, type CashFlowWithMovements } from '@/services/cashFlowService'
 import { CashBalanceChart } from '@/components/CashBalanceChart'
 import { CashInOutBarChart } from '@/components/CashInOutBarChart'
+import { CategoryPieChart } from '@/components/CategoryPieChart'
+import { FinancialSummary } from '@/components/FinancialSummary'
 import { GlobalLoading } from '@/components/ui/global-loading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ArrowLeft } from 'lucide-react'
 
 export const Route = createFileRoute('/_app/accountability')({
   component: AccountabilityPage,
@@ -42,9 +45,31 @@ function AccountabilityPage() {
     fetchMovements(selectedYear)
   }, [selectedYear])
 
+  const totalEntries = movements.reduce((acc, curr) => {
+    const inflowSum = curr.inflows?.reduce((sum, inflow) => sum + Number(inflow.inflow_value), 0) || 0
+    return acc + inflowSum
+  }, 0)
+
+  const totalExits = movements.reduce((acc, curr) => {
+    const outflowSum = curr.outflows?.reduce((sum, outflow) => sum + Number(outflow.outflow_value), 0) || 0
+    return acc + outflowSum
+  }, 0)
+
+  const balance = totalEntries - totalExits
+
   return (
     <div className="min-h-screen bg-background text-foreground p-4 sm:p-8">
       <GlobalLoading visible={loading} text="Carregando dados..." />
+
+      <div className="mb-6 sm:mb-8">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para Home
+        </Link>
+      </div>
 
       <div className="container mx-auto max-w-7xl space-y-8">
         <div className="flex flex-col items-center space-y-4 lg:flex-row lg:items-end md:justify-between md:space-y-0">
@@ -73,9 +98,17 @@ function AccountabilityPage() {
           </div>
         </div>
 
+        <FinancialSummary
+          totalEntries={totalEntries}
+          totalExits={totalExits}
+          balance={balance}
+          balanceTitle="Saldo do Ano"
+        />
+
         <div className="grid grid-cols-1 gap-6">
           <CashBalanceChart data={movements} year={selectedYear} />
           <CashInOutBarChart data={movements} year={selectedYear} />
+          <CategoryPieChart data={movements} year={selectedYear} />
         </div>
       </div>
     </div>
