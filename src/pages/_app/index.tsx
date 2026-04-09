@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { useForm, Controller } from 'react-hook-form'
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Cloud, FileChartPie, Filter, Loader2, Plus, Trash2 } from 'lucide-react'
+import { Filter, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerFooter, DrawerClose, DrawerDescription } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
 import { CurrencyInput } from '@/components/CurrencyInput'
@@ -323,7 +323,7 @@ function Index() {
               </DrawerContent>
             </Drawer>
 
-            <Button
+            {/* <Button
               asChild
               className="bg-zinc-900 border hover:bg-zinc-900 border-zinc-800 text-white w-full max-w-sm lg:w-auto lg:max-w-none"
             >
@@ -331,9 +331,9 @@ function Index() {
                 <FileChartPie className="h-4 w-4" />
                 Prestação de Contas
               </Link>
-            </Button>
+            </Button> */}
 
-            <Button
+            {/* <Button
               asChild
               className="bg-zinc-900 border hover:bg-zinc-900 border-zinc-800 text-white w-full max-w-sm lg:w-auto lg:max-w-none"
             >
@@ -345,7 +345,7 @@ function Index() {
                 <Cloud className="h-4 w-4" />
                 Recibos
               </a>
-            </Button>
+            </Button> */}
 
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full max-w-sm flex-col gap-2 lg:flex-row sm:items-end sm:gap-4">
               <div className="w-full space-y-2">

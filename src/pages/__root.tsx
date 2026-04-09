@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/use-auth";
 import { AccessModal } from "@/components/ui/access-modal";
+import { AppMenubar } from "@/components/AppMenubar";
 
 export const Route = createRootRoute({
   component: RootComponent
@@ -24,6 +25,7 @@ function RootComponent() {
   return (
     <div className="flex min-h-screen flex-col">
       <HeadContent />
+      <AppMenubar />
       <div className="flex-1">
         <Outlet />
       </div>

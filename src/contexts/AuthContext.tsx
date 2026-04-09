@@ -64,8 +64,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        toast.error('Não foi possível sair')
+        return
+      }
+      toast.success('Sessão encerrada')
+    } catch {
+      toast.error('Não foi possível sair')
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, requestAccess }}>
+    <AuthContext.Provider value={{ isAuthenticated, requestAccess, logout }}>
       {children}
     </AuthContext.Provider>
   )
