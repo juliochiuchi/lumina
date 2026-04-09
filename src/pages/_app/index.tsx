@@ -15,6 +15,7 @@ import { CurrencyInput } from '@/components/CurrencyInput'
 import { toast } from 'sonner'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
 import { GlobalLoading } from '@/components/ui/global-loading'
+import { useAuth } from '@/contexts/use-auth'
 
 export const Route = createFileRoute('/_app/')({
   component: Index,
@@ -45,6 +46,7 @@ const MONTHS = [
 
 function Index() {
   const navigate = useNavigate()
+  const { isAdmin } = useAuth()
   const [movements, setMovements] = useState<CashFlow[]>([])
   const [loading, setLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -183,170 +185,147 @@ function Index() {
           <h1 className="mb-4 text-3xl font-bold tracking-tight text-white text-center lg:text-left lg:mb-0">Movimentos de Caixa</h1>
 
           <div className="flex flex-col gap-4 items-center w-full lg:items-end lg:w-auto lg:flex-row">
-            <Drawer direction="top" open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-              <DrawerTrigger asChild>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white w-full max-w-sm lg:w-auto lg:max-w-none">
-                  <Plus className="mr-2 h-4 w-4" /> Novo Movimento
-                </Button>
-              </DrawerTrigger>
-              <DrawerContent className="top-0 mt-0 mb-auto rounded-b-[10px] rounded-t-none bottom-auto bg-card border-border text-card-foreground">
-                <div className="mx-auto w-full max-w-4xl">
-                  <DrawerHeader>
-                    <DrawerTitle className="text-zinc-50">Novo Movimento de Caixa</DrawerTitle>
-                    <DrawerDescription className="text-zinc-400">
-                      Informe os dados iniciais para a abertura de um novo movimento. Você será redirecionado após concluir e salvar esta etapa.
-                    </DrawerDescription>
-                  </DrawerHeader>
-                  <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="p-4 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2 col-span-1 md:col-span-2">
-                        <Label htmlFor="name">Nome</Label>
-                        <Input id="name" {...createForm.register("name")} className="bg-input border-border text-foreground placeholder:text-muted-foreground" />
-                        {createForm.formState.errors.name && <p className="text-destructive text-sm">{createForm.formState.errors.name.message}</p>}
+            {isAdmin ? (
+              <Drawer direction="top" open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+                <DrawerTrigger asChild>
+                  <Button className="bg-emerald-600 hover:bg-emerald-700 text-white w-full max-w-sm lg:w-auto lg:max-w-none">
+                    <Plus className="mr-2 h-4 w-4" /> Novo Movimento
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent className="top-0 mt-0 mb-auto rounded-b-[10px] rounded-t-none bottom-auto bg-card border-border text-card-foreground">
+                  <div className="mx-auto w-full max-w-4xl">
+                    <DrawerHeader>
+                      <DrawerTitle className="text-zinc-50">Novo Movimento de Caixa</DrawerTitle>
+                      <DrawerDescription className="text-zinc-400">
+                        Informe os dados iniciais para a abertura de um novo movimento. Você será redirecionado após concluir e salvar esta etapa.
+                      </DrawerDescription>
+                    </DrawerHeader>
+                    <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="p-4 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2 col-span-1 md:col-span-2">
+                          <Label htmlFor="name">Nome</Label>
+                          <Input id="name" {...createForm.register("name")} className="bg-input border-border text-foreground placeholder:text-muted-foreground" />
+                          {createForm.formState.errors.name && <p className="text-destructive text-sm">{createForm.formState.errors.name.message}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="year" className="text-zinc-200">Ano (referência)</Label>
+                          <Controller
+                            control={createForm.control}
+                            name="year"
+                            render={({ field }) => (
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <SelectTrigger className="bg-input border-border">
+                                  <SelectValue placeholder="Selecione o ano" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover border-border text-popover-foreground">
+                                  {years.map((year) => (
+                                    <SelectItem key={year} value={year} className="focus:bg-muted focus:text-zinc-50 cursor-pointer">
+                                      {year}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                          {createForm.formState.errors.year && <p className="text-red-400 text-sm">{createForm.formState.errors.year.message}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Mês (referência)</Label>
+                          <Controller
+                            control={createForm.control}
+                            name="regard_month"
+                            render={({ field }) => (
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <SelectTrigger className="bg-input border-border">
+                                  <SelectValue placeholder="Selecione o mês" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover border-border text-popover-foreground">
+                                  {MONTHS.map(month => (
+                                    <SelectItem key={month} value={month}>{month}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                          {createForm.formState.errors.regard_month && <p className="text-red-400 text-sm">{createForm.formState.errors.regard_month.message}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Saldo Inicial</Label>
+                          <Controller
+                            control={createForm.control}
+                            name="initial_balance"
+                            render={({ field }) => (
+                              <CurrencyInput
+                                value={field.value}
+                                onChange={field.onChange}
+                                error={createForm.formState.errors.initial_balance?.message}
+                              />
+                            )}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Saldo Final</Label>
+                          <Controller
+                            control={createForm.control}
+                            name="final_balance"
+                            render={({ field }) => (
+                              <CurrencyInput
+                                value={field.value}
+                                onChange={field.onChange}
+                                error={createForm.formState.errors.final_balance?.message}
+                              />
+                            )}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Aplicação Investimento</Label>
+                          <Controller
+                            control={createForm.control}
+                            name="investment_application"
+                            render={({ field }) => (
+                              <CurrencyInput
+                                value={field.value}
+                                onChange={field.onChange}
+                                error={createForm.formState.errors.investment_application?.message}
+                              />
+                            )}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Resgate Aplicação</Label>
+                          <Controller
+                            control={createForm.control}
+                            name="redemption_application"
+                            render={({ field }) => (
+                              <CurrencyInput
+                                value={field.value}
+                                onChange={field.onChange}
+                                error={createForm.formState.errors.redemption_application?.message}
+                              />
+                            )}
+                          />
+                        </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="year" className="text-zinc-200">Ano (referência)</Label>
-                        <Controller
-                          control={createForm.control}
-                          name="year"
-                          render={({ field }) => (
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <SelectTrigger className="bg-input border-border">
-                                <SelectValue placeholder="Selecione o ano" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-popover border-border text-popover-foreground">
-                                {years.map((year) => (
-                                  <SelectItem key={year} value={year} className="focus:bg-muted focus:text-zinc-50 cursor-pointer">
-                                    {year}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                        {createForm.formState.errors.year && <p className="text-red-400 text-sm">{createForm.formState.errors.year.message}</p>}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Mês (referência)</Label>
-                        <Controller
-                          control={createForm.control}
-                          name="regard_month"
-                          render={({ field }) => (
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <SelectTrigger className="bg-input border-border">
-                                <SelectValue placeholder="Selecione o mês" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-popover border-border text-popover-foreground">
-                                {MONTHS.map(month => (
-                                  <SelectItem key={month} value={month}>{month}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                        {createForm.formState.errors.regard_month && <p className="text-red-400 text-sm">{createForm.formState.errors.regard_month.message}</p>}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Saldo Inicial</Label>
-                        <Controller
-                          control={createForm.control}
-                          name="initial_balance"
-                          render={({ field }) => (
-                            <CurrencyInput
-                              value={field.value}
-                              onChange={field.onChange}
-                              error={createForm.formState.errors.initial_balance?.message}
-                            />
-                          )}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Saldo Final</Label>
-                        <Controller
-                          control={createForm.control}
-                          name="final_balance"
-                          render={({ field }) => (
-                            <CurrencyInput
-                              value={field.value}
-                              onChange={field.onChange}
-                              error={createForm.formState.errors.final_balance?.message}
-                            />
-                          )}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Aplicação Investimento</Label>
-                        <Controller
-                          control={createForm.control}
-                          name="investment_application"
-                          render={({ field }) => (
-                            <CurrencyInput
-                              value={field.value}
-                              onChange={field.onChange}
-                              error={createForm.formState.errors.investment_application?.message}
-                            />
-                          )}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Resgate Aplicação</Label>
-                        <Controller
-                          control={createForm.control}
-                          name="redemption_application"
-                          render={({ field }) => (
-                            <CurrencyInput
-                              value={field.value}
-                              onChange={field.onChange}
-                              error={createForm.formState.errors.redemption_application?.message}
-                            />
-                          )}
-                        />
-                      </div>
-                    </div>
-
-                    <DrawerFooter className="p-0 flex flex-col gap-2 pt-4 w-full">
-                      <Button type="submit" disabled={isSubmitting} className="w-full bg-zinc-50 hover:bg-zinc-200 text-zinc-950">
-                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Salvar'}
-                      </Button>
-                      <DrawerClose asChild>
-                        <Button variant="outline" type="button" className="w-full bg-transparent border-zinc-700 text-zinc-100 hover:bg-zinc-800 hover:text-zinc-100">Cancelar</Button>
-                      </DrawerClose>
-                    </DrawerFooter>
-                  </form>
-                </div>
-              </DrawerContent>
-            </Drawer>
-
-            {/* <Button
-              asChild
-              className="bg-zinc-900 border hover:bg-zinc-900 border-zinc-800 text-white w-full max-w-sm lg:w-auto lg:max-w-none"
-            >
-              <Link to="/accountability">
-                <FileChartPie className="h-4 w-4" />
-                Prestação de Contas
-              </Link>
-            </Button> */}
-
-            {/* <Button
-              asChild
-              className="bg-zinc-900 border hover:bg-zinc-900 border-zinc-800 text-white w-full max-w-sm lg:w-auto lg:max-w-none"
-            >
-              <a
-                target="_blank"
-                rel="noopener noreferrer"
-                href="https://drive.google.com/drive/u/1/folders/15KgESYnFf3L28pjdFqKiNAxu7A9rFYE9"
-              >
-                <Cloud className="h-4 w-4" />
-                Recibos
-              </a>
-            </Button> */}
-
+                      <DrawerFooter className="p-0 flex flex-col gap-2 pt-4 w-full">
+                        <Button type="submit" disabled={isSubmitting} className="w-full bg-zinc-50 hover:bg-zinc-200 text-zinc-950">
+                          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Salvar'}
+                        </Button>
+                        <DrawerClose asChild>
+                          <Button variant="outline" type="button" className="w-full bg-transparent border-zinc-700 text-zinc-100 hover:bg-zinc-800 hover:text-zinc-100">Cancelar</Button>
+                        </DrawerClose>
+                      </DrawerFooter>
+                    </form>
+                  </div>
+                </DrawerContent>
+              </Drawer>
+            ) : null}
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full max-w-sm flex-col gap-2 lg:flex-row sm:items-end sm:gap-4">
               <div className="w-full space-y-2">
                 <Label htmlFor="year" className="text-zinc-200">Filtrar por Ano</Label>
@@ -395,17 +374,19 @@ function Index() {
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     {movement.regard_month}
                   </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteClick(movement.id)
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {isAdmin ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteClick(movement.id)
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  ) : null}
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold truncate" title={movement.name}>{movement.name}</div>

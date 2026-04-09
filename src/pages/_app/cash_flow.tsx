@@ -22,6 +22,8 @@ import { toast } from 'sonner'
 import { FinancialSummary } from '@/components/FinancialSummary'
 import { GlobalLoading } from '@/components/ui/global-loading'
 import { Skeleton } from '@/components/ui/skeleton'
+import { ConfirmationModal } from '@/components/ui/confirmation-modal'
+import { useAuth } from '@/contexts/use-auth'
 
 export const Route = createFileRoute('/_app/cash_flow')({
   validateSearch: (search: Record<string, unknown>) => {
@@ -51,6 +53,7 @@ type ExitData = z.infer<typeof exitSchema>
 function Index() {
   const { id } = Route.useSearch()
   const navigate = useNavigate()
+  const { isAdmin } = useAuth()
   const [currentMovementId, setCurrentMovementId] = useState<string | undefined>(id)
 
   useEffect(() => {
@@ -81,6 +84,7 @@ function Index() {
   const [saldoFinal, setSaldoFinal] = useState<number>(0)
   const [aplicacaoInvestimento, setAplicacaoInvestimento] = useState<number>(0)
   const [resgateAplicacao, setResgateAplicacao] = useState<number>(0)
+  const [isRestartConfirmOpen, setIsRestartConfirmOpen] = useState(false)
   // Removido controle de localStorage
   const [categoriesLoading, setCategoriesLoading] = useState<boolean>(false)
   const [cashFlowLoading, setCashFlowLoading] = useState<boolean>(false)
@@ -354,16 +358,23 @@ function Index() {
     }
   }
 
+  const resetCashFlowState = () => {
+    setRawInflows([])
+    setRawOutflows([])
+    setSaldoInicial(0)
+    setSaldoFinal(0)
+    setAplicacaoInvestimento(0)
+    setResgateAplicacao(0)
+  }
+
   const handleRestart = () => {
-    if (window.confirm('Tem certeza que deseja reiniciar?')) {
-      setRawInflows([])
-      setRawOutflows([])
-      setSaldoInicial(0)
-      setSaldoFinal(0)
-      setAplicacaoInvestimento(0)
-      setResgateAplicacao(0)
-      navigate({ to: '/' })
-    }
+    setIsRestartConfirmOpen(true)
+  }
+
+  const handleConfirmRestart = () => {
+    setIsRestartConfirmOpen(false)
+    resetCashFlowState()
+    navigate({ to: '/' })
   }
 
   // Função para exportar para Excel
@@ -1175,13 +1186,15 @@ function Index() {
         {/* Formulários e tabelas - lado a lado em telas grandes, empilhados em pequenas */}
         <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 mb-6 sm:mb-8 w-full">
           <div className="flex-1 space-y-6">
-            <CashFlowForm
-              title="Adicionar Entrada"
-              icon={<TrendingUp className="h-5 w-5 text-green-400" />}
-              types={categoryNames}
-              onSubmit={handleAddEntry}
-              schema={entrySchema}
-            />
+            {isAdmin ? (
+              <CashFlowForm
+                title="Adicionar Entrada"
+                icon={<TrendingUp className="h-5 w-5 text-green-400" />}
+                types={categoryNames}
+                onSubmit={handleAddEntry}
+                schema={entrySchema}
+              />
+            ) : null}
             {inflowsLoading ? (
               <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 overflow-hidden">
                 <div className="p-6 border-b border-zinc-800/50">
@@ -1197,18 +1210,26 @@ function Index() {
                 </div>
               </div>
             ) : (
-              <CashFlowTable title="Entradas Registradas" data={entries} onDelete={handleDeleteEntry} variant="entry" />
+              <CashFlowTable
+                title="Entradas Registradas"
+                data={entries}
+                onDelete={handleDeleteEntry}
+                canDelete={isAdmin}
+                variant="entry"
+              />
             )}
           </div>
 
           <div className="flex-1 space-y-6">
-            <CashFlowForm
-              title="Adicionar Saída"
-              icon={<TrendingDown className="h-5 w-5 text-red-400" />}
-              types={categoryNames}
-              onSubmit={handleAddExit}
-              schema={exitSchema}
-            />
+            {isAdmin ? (
+              <CashFlowForm
+                title="Adicionar Saída"
+                icon={<TrendingDown className="h-5 w-5 text-red-400" />}
+                types={categoryNames}
+                onSubmit={handleAddExit}
+                schema={exitSchema}
+              />
+            ) : null}
             {outflowsLoading ? (
               <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 overflow-hidden">
                 <div className="p-6 border-b border-zinc-800/50">
@@ -1224,7 +1245,13 @@ function Index() {
                 </div>
               </div>
             ) : (
-              <CashFlowTable title="Saídas Registradas" data={exits} onDelete={handleDeleteExit} variant="exit" />
+              <CashFlowTable
+                title="Saídas Registradas"
+                data={exits}
+                onDelete={handleDeleteExit}
+                canDelete={isAdmin}
+                variant="exit"
+              />
             )}
           </div>
         </div>
@@ -1235,21 +1262,25 @@ function Index() {
             label="Saldo Inicial"
             value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldoInicial)}
             onSave={(value) => handleUpdateBalance('initial_balance', value)}
+            canEdit={isAdmin}
           />
           <BalanceInput
             label="Saldo Final"
             value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldoFinal)}
             onSave={(value) => handleUpdateBalance('final_balance', value)}
+            canEdit={isAdmin}
           />
           <BalanceInput
             label="Aplicação Investimento"
             value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(aplicacaoInvestimento)}
             onSave={(value) => handleUpdateBalance('investment_application', value)}
+            canEdit={isAdmin}
           />
           <BalanceInput
             label="Resgate Aplicação"
             value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(resgateAplicacao)}
             onSave={(value) => handleUpdateBalance('redemption_application', value)}
+            canEdit={isAdmin}
           />
         </div>
 
@@ -1303,6 +1334,16 @@ function Index() {
           onRestart={handleRestart}
         />
       </div>
+
+      <ConfirmationModal
+        isOpen={isRestartConfirmOpen}
+        onClose={() => setIsRestartConfirmOpen(false)}
+        onConfirm={handleConfirmRestart}
+        title="Encerrar fluxo de caixa?"
+        description="Isso vai limpar os dados em tela e voltar para a Home."
+        confirmText="Encerrar"
+        cancelText="Cancelar"
+      />
     </div>
   )
 }

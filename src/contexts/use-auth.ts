@@ -1,7 +1,14 @@
 import { createContext, useContext } from 'react'
 
+export interface AuthUser {
+  email: string
+  rules_admin: boolean
+}
+
 export interface AuthContextType {
   isAuthenticated: boolean
+  user: AuthUser | null
+  isAdmin: boolean
   requestAccess: (email: string) => Promise<void>
   logout: () => Promise<void>
 }

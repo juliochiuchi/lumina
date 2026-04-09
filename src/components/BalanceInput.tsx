@@ -6,9 +6,10 @@ interface BalanceInputProps {
   label: string
   value: string
   onSave: (value: number) => void
+  canEdit?: boolean
 }
 
-export function BalanceInput({ label, value, onSave }: BalanceInputProps) {
+export function BalanceInput({ label, value, onSave, canEdit = true }: BalanceInputProps) {
   const [inputValue, setInputValue] = useState('')
   const [isEditing, setIsEditing] = useState(false)
 
@@ -38,6 +39,7 @@ export function BalanceInput({ label, value, onSave }: BalanceInputProps) {
         </div>
 
         {!isEditing ? (
+          canEdit ? (
           <Button
             variant="ghost"
             size="sm"
@@ -46,6 +48,7 @@ export function BalanceInput({ label, value, onSave }: BalanceInputProps) {
           >
             Clique aqui para editar
           </Button>
+          ) : null
         ) : (
           <div className="flex flex-col gap-2 min-w-[200px]">
             <CurrencyInput

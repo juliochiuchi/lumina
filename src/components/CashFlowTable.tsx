@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button'
 interface CashFlowTableProps {
   title: string
   data: Array<{ id: string; description: string; type: string; amount: number; date: string }>
-  onDelete: (id: string) => void
+  onDelete?: (id: string) => void
+  canDelete?: boolean
   variant?: 'entry' | 'exit'
 }
 
-export function CashFlowTable({ title, data, onDelete, variant = 'entry' }: CashFlowTableProps) {
+export function CashFlowTable({ title, data, onDelete, canDelete = true, variant = 'entry' }: CashFlowTableProps) {
   const total = data.reduce((sum, item) => sum + item.amount, 0)
   const dotColorClass = variant === 'entry' ? 'bg-[#4ade80]' : 'bg-[#f87171]'
 
@@ -24,7 +25,9 @@ export function CashFlowTable({ title, data, onDelete, variant = 'entry' }: Cash
             <DollarSign className="h-8 w-8 text-[#60a5fa]" />
           </div>
           <p className="text-zinc-400 text-lg">Nenhum registro encontrado</p>
-          <p className="text-zinc-500 text-sm mt-1">Adicione o primeiro registro para começar</p>
+          {canDelete ? (
+            <p className="text-zinc-500 text-sm mt-1">Adicione o primeiro registro para começar</p>
+          ) : null}
         </div>
       </div>
     )
@@ -87,14 +90,16 @@ export function CashFlowTable({ title, data, onDelete, variant = 'entry' }: Cash
                     </div>
                   </div>
                   
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDelete(item.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8 p-0"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {canDelete && onDelete ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDelete(item.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8 p-0"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             </div>
