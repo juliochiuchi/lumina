@@ -31,17 +31,17 @@ export function AppMenubar() {
   return (
     <div className="p-4">
       <Menubar className="flex h-auto items-center justify-between rounded-full border bg-background px-3 py-1.5 shadow-sm">
-        <div className="flex items-center gap-4">
-          <Link to="/" className="flex items-center gap-2 pl-2 pr-4 text-sm font-semibold">
+        <div className="flex items-center gap-2 md:gap-4">
+          <Link to="/" className="flex shrink-0 items-center gap-2 pl-2 pr-2 md:pr-4 text-sm font-semibold">
             <Gem className="h-4 w-4" />
-            Lumina
+            <span className="hidden sm:inline">Lumina</span>
           </Link>
 
           <div className="flex items-center gap-1">
             <MenubarMenu>
-              <MenubarTrigger className="gap-2">
+              <MenubarTrigger className="gap-2 px-2 md:px-3">
                 <BarChart3 className="h-4 w-4" />
-                Financeiro
+                <span className="hidden md:inline">Financeiro</span>
               </MenubarTrigger>
               <MenubarContent>
                 <MenubarItem asChild>
@@ -60,9 +60,9 @@ export function AppMenubar() {
             </MenubarMenu>
 
             <MenubarMenu>
-              <MenubarTrigger className="gap-2">
+              <MenubarTrigger className="gap-2 px-2 md:px-3">
                 <FileText className="h-4 w-4" />
-                Documentos
+                <span className="hidden md:inline">Documentos</span>
               </MenubarTrigger>
               <MenubarContent>
                 <MenubarItem asChild>
@@ -89,9 +89,9 @@ export function AppMenubar() {
             </MenubarMenu>
 
             <MenubarMenu>
-              <MenubarTrigger className="gap-2">
+              <MenubarTrigger className="gap-2 px-2 md:px-3">
                 <SlidersHorizontal className="h-4 w-4" />
-                Configurações
+                <span className="hidden md:inline">Configurações</span>
               </MenubarTrigger>
               <MenubarContent>
                 <MenubarItem disabled className="gap-2 disabled:cursor-not-allowed">
