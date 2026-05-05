@@ -608,7 +608,7 @@ function CashFlow() {
     XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo Geral')
 
     // Salvar arquivo
-    const fileName = `fluxo-caixa-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`
+    const fileName = `fluxo-caixa-${nameMonthExport.toLowerCase()}.xlsx`
     XLSX.writeFile(wb, fileName)
   }
 
