@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useMemo } from 'react'
 import { z } from 'zod'
-import { TrendingUp, TrendingDown, ArrowLeft } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowLeft, CalendarDays, Clock } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, AlignmentType, WidthType, BorderStyle } from 'docx'
 import { saveAs } from 'file-saver'
@@ -55,6 +55,7 @@ function CashFlow() {
   const navigate = useNavigate()
   const { isAdmin } = useAuth()
   const [currentMovementId, setCurrentMovementId] = useState<string | undefined>(id)
+  const [cashFlowInfo, setCashFlowInfo] = useState<CashFlow | null>(null)
 
   useEffect(() => {
     setCurrentMovementId(id)
@@ -155,11 +156,13 @@ function CashFlow() {
     try {
       const data = await cashFlowService.getById(id)
       if (data) {
+        setCashFlowInfo(data)
         setSaldoInicial(data.initial_balance || 0)
         setSaldoFinal(data.final_balance || 0)
         setAplicacaoInvestimento(data.investment_application || 0)
         setResgateAplicacao(data.redemption_application || 0)
         setNameMonthExport(data.regard_month || '[error]')
+        setAnoAtual(Number(data.year) || new Date().getFullYear())
       }
       await reloadInflows()
       await reloadOutflows()
@@ -367,6 +370,7 @@ function CashFlow() {
     setSaldoFinal(0)
     setAplicacaoInvestimento(0)
     setResgateAplicacao(0)
+    setCashFlowInfo(null)
   }
 
   const handleRestart = () => {
@@ -1159,7 +1163,7 @@ function CashFlow() {
     <div className="min-h-screen bg-background text-foreground">
       <GlobalLoading visible={categoriesLoading || cashFlowLoading} text="Carregando dados..." />
       <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
-        <div className="mb-6 sm:mb-8">
+        <div className="mb-6 sm:mb-8 space-y-4">
           <Link
             to="/"
             className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
@@ -1167,6 +1171,59 @@ function CashFlow() {
             <ArrowLeft className="h-4 w-4" />
             Voltar para Home
           </Link>
+
+          {currentMovementId ? (
+            <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 backdrop-blur-sm p-4 sm:p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+                    Movimentação em visualização
+                  </div>
+                  {cashFlowLoading && !cashFlowInfo ? (
+                    <div className="mt-2 max-w-md">
+                      <Skeleton className="h-7 w-72" />
+                    </div>
+                  ) : (
+                    <div className="mt-1 truncate text-lg sm:text-xl font-semibold text-white">
+                      {cashFlowInfo?.name || '—'}
+                    </div>
+                  )}
+                </div>
+
+                <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/30 px-3 py-2.5">
+                    <dt className="flex items-center gap-2 text-xs font-medium text-zinc-400">
+                      <CalendarDays className="h-4 w-4 text-zinc-400" />
+                      Mês referente
+                    </dt>
+                    <dd className="mt-1 text-sm font-semibold text-white">
+                      {cashFlowInfo?.regard_month || nameMonthExport || '—'}
+                    </dd>
+                  </div>
+
+                  <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/30 px-3 py-2.5">
+                    <dt className="flex items-center gap-2 text-xs font-medium text-zinc-400">
+                      <CalendarDays className="h-4 w-4 text-zinc-400" />
+                      Ano referente
+                    </dt>
+                    <dd className="mt-1 text-sm font-semibold text-white">
+                      {cashFlowInfo?.year || (anoAtual ? String(anoAtual) : '—')}
+                    </dd>
+                  </div>
+
+                  <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/30 px-3 py-2.5">
+                    <dt className="flex items-center gap-2 text-xs font-medium text-zinc-400">
+                      <Clock className="h-4 w-4 text-zinc-400" />
+                      Criado em
+                    </dt>
+                    <dd className="mt-1 text-sm font-semibold text-white">
+                      {cashFlowInfo?.created_at ? new Date(cashFlowInfo.created_at).toLocaleDateString('pt-BR') : '—'}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {inflowsLoading || outflowsLoading ? (

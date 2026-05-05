@@ -9,6 +9,7 @@ export type CashFlow = {
   redemption_application: number
   regard_month: string
   year: string
+  created_at?: string | null
 }
 
 export type CashFlowWithMovements = CashFlow & {
