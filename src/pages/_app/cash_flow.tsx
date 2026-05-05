@@ -31,7 +31,7 @@ export const Route = createFileRoute('/_app/cash_flow')({
       id: search.id as string | undefined,
     }
   },
-  component: Index,
+  component: CashFlow,
 })
 
 // Schemas de validação
@@ -50,7 +50,7 @@ const exitSchema = z.object({
 type EntryData = z.infer<typeof entrySchema>
 type ExitData = z.infer<typeof exitSchema>
 
-function Index() {
+function CashFlow() {
   const { id } = Route.useSearch()
   const navigate = useNavigate()
   const { isAdmin } = useAuth()
@@ -92,25 +92,26 @@ function Index() {
   const [outflowsLoading, setOutflowsLoading] = useState<boolean>(false)
 
   // Estados para o mês e ano atual
-  const [mesAtual, setMesAtual] = useState<string>('')
+  const [nameMonthExport, setNameMonthExport] = useState<string>('')
+  // const [mesAtual, setMesAtual] = useState<string>('')
   const [anoAtual, setAnoAtual] = useState<number>(0)
 
   // Array com os nomes dos meses em português
-  const nomesMeses = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ]
+  // const nomesMeses = [
+  //   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  //   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  // ]
 
   // Função para obter o mês anterior e ano atual
   const obterMesEAnoAtual = () => {
     const hoje = new Date()
-    const indiceMesAnterior = hoje.getMonth() - 1 // Mês anterior (0-11)
+    // const indiceMesAnterior = hoje.getMonth() - 1 // Mês anterior (0-11)
     const ano = hoje.getFullYear()
 
     // Se o mês anterior for -1 (janeiro atual), usar dezembro (índice 11)
-    const indiceMesFinal = indiceMesAnterior < 0 ? 11 : indiceMesAnterior
+    // const indiceMesFinal = indiceMesAnterior < 0 ? 11 : indiceMesAnterior
 
-    setMesAtual(nomesMeses[indiceMesFinal])
+    // setMesAtual(nomesMeses[indiceMesFinal])
     setAnoAtual(ano)
   }
 
@@ -158,6 +159,7 @@ function Index() {
         setSaldoFinal(data.final_balance || 0)
         setAplicacaoInvestimento(data.investment_application || 0)
         setResgateAplicacao(data.redemption_application || 0)
+        setNameMonthExport(data.regard_month || '[error]')
       }
       await reloadInflows()
       await reloadOutflows()
@@ -657,7 +659,7 @@ function Index() {
           new Paragraph({
             children: [
               new TextRun({
-                text: `PRESTAÇÃO DE CONTAS MÊS DE ${mesAtual.toUpperCase()} DE ${anoAtual}`,
+                text: `PRESTAÇÃO DE CONTAS MÊS DE ${nameMonthExport.toUpperCase()} DE ${anoAtual}`,
                 bold: true,
                 size: 24,
                 font: "Calibri",
@@ -1150,7 +1152,7 @@ function Index() {
 
     // Gerar e baixar o arquivo
     const blob = await Packer.toBlob(doc)
-    saveAs(blob, `prestacao-contas-${new Date().toISOString().slice(0, 7)}.docx`)
+    saveAs(blob, `PRESTAÇÃO DE CONTAS MÊS DE ${nameMonthExport.toUpperCase()} DE ${anoAtual}.docx`)
   }
 
   return (
