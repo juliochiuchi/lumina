@@ -8,10 +8,10 @@ export function Footer() {
           &copy; {new Date().getFullYear()} Lumina. Todos os direitos reservados.
         </p>
         <div className="flex flex-col items-center gap-2 md:flex-row md:gap-4">
-          <Link to="https://myspace-julio-chiuchi.vercel.app/" className="text-sm text-muted-foreground hover:text-primary">
+          <Link to="https://msjc.vercel.app/" target="_blank" className="text-sm text-muted-foreground hover:text-primary">
             Desenvolvido por Otherside
           </Link>
-          <Link to="https://ipimacaubal.com.br" className="text-sm text-muted-foreground hover:text-primary">
+          <Link to="https://ipimacaubal.com.br" target="_blank" className="text-sm text-muted-foreground hover:text-primary">
             IPIM
           </Link>
         </div>

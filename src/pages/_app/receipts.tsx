@@ -20,7 +20,7 @@ function RouteComponent() {
           className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar para Home
+          Voltar
         </Link>
       </div>
 

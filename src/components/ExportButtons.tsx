@@ -1,38 +1,36 @@
-import { Download, LogOut } from 'lucide-react'
+import { Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 interface ExportButtonsProps {
   onExportExcel: () => void
   onExportDocx: () => void
-  onRestart: () => void
+  className?: string
 }
 
-export function ExportButtons({ onExportExcel, onExportDocx, onRestart }: ExportButtonsProps) {
+export function ExportButtons({ onExportExcel, onExportDocx, className }: ExportButtonsProps) {
   return (
-    <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 justify-center items-center">
+    <div className={cn('grid w-full grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-1', className)}>
       <Button
         onClick={onExportExcel}
-        className="w-full lg:w-auto text-zinc-700 bg-zinc-200 hover:bg-zinc-100 flex items-center justify-center gap-2 text-sm sm:text-base"
+        variant="outline"
+        className="h-auto min-h-11 w-full justify-start rounded-lg border-zinc-800/80 bg-zinc-950/50 px-4 py-3 text-left whitespace-normal text-zinc-100 shadow-none hover:bg-zinc-900/70 hover:text-white"
       >
         <Download className="h-4 w-4" />
-        Exportar para .xlsx
+        <span className="min-w-0 break-words">
+          Exportar para .xlsx <span className="text-[.8rem] font-light italic text-muted-foreground">(excel)</span>
+        </span>
       </Button>
 
       <Button
         onClick={onExportDocx}
-        className="w-full lg:w-auto text-zinc-700 bg-zinc-200 hover:bg-zinc-100 flex items-center justify-center gap-2 text-sm sm:text-base"
+        variant="outline"
+        className="h-auto min-h-11 w-full justify-start rounded-lg border-zinc-800/80 bg-zinc-950/50 px-4 py-3 text-left whitespace-normal text-zinc-100 shadow-none hover:bg-zinc-900/70 hover:text-white"
       >
         <Download className="h-4 w-4" />
-        Exportar para .docx
-      </Button>
-
-      <Button
-        onClick={onRestart}
-        variant="destructive"
-        className="w-full lg:w-auto text-zinc-200 bg-transparent border border-zinc-400 hover:bg-transparent hover:text-zinc-400 flex items-center justify-center gap-2 text-sm sm:text-base"
-      >
-        <LogOut className="h-4 w-4" />
-        Encerrar Sessão
+        <span className="min-w-0 break-words">
+          Exportar para .docx <span className="text-[.8rem] font-light italic text-muted-foreground">(word)</span>
+        </span>
       </Button>
     </div>
   )

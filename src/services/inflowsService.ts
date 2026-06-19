@@ -38,6 +38,21 @@ export const inflowsService = {
     return data as Inflow
   },
 
+  async update(id: string, payload: Partial<Omit<Inflow, 'id' | 'created_at'>>) {
+    const { data, error } = await supabase
+      .from('inflows')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return data as Inflow
+  },
+
   async delete(id: string) {
     const { error } = await supabase
       .from('inflows')

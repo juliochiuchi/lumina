@@ -113,7 +113,7 @@ export function AppMenubar() {
           </MenubarTrigger>
           <MenubarContent align="end" className="min-w-48">
             <MenubarItem
-              className="gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive"
+              className="gap-2 text-rose-400 focus:bg-rose-500/10 focus:text-rose-300"
               onSelect={() => {
                 void logout()
               }}

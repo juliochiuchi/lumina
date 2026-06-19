@@ -1,7 +1,6 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect, useMemo } from 'react'
-import { z } from 'zod'
-import { TrendingUp, TrendingDown, ArrowLeft, CalendarDays, Clock } from 'lucide-react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useState, useEffect, useCallback } from 'react'
+import { TrendingUp, TrendingDown, CalendarDays, Clock } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, AlignmentType, WidthType, BorderStyle } from 'docx'
 import { saveAs } from 'file-saver'
@@ -13,8 +12,7 @@ import { inflowsService, type Inflow } from '@/services/inflowsService'
 import { outflowsService, type Outflow } from '@/services/outflowsService'
 
 // Componentes extraídos
-import { CashFlowForm } from '@/components/CashFlowForm'
-import { CashFlowTable } from '@/components/CashFlowTable'
+import { CashFlowSection } from '@/components/CashFlowSection'
 import { BalanceInput } from '@/components/BalanceInput'
 import { TypeSummary } from '@/components/TypeSummary'
 import { ExportButtons } from '@/components/ExportButtons'
@@ -24,6 +22,8 @@ import { GlobalLoading } from '@/components/ui/global-loading'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
 import { useAuth } from '@/contexts/use-auth'
+import { entrySchema, exitSchema } from '@/lib/cash-flow'
+import type { CashFlowFormData, CashFlowRecord } from '@/types/cash-flow'
 
 export const Route = createFileRoute('/_app/cash_flow')({
   validateSearch: (search: Record<string, unknown>) => {
@@ -34,21 +34,33 @@ export const Route = createFileRoute('/_app/cash_flow')({
   component: CashFlow,
 })
 
-// Schemas de validação
-const entrySchema = z.object({
-  description: z.string().min(1, 'Descrição é obrigatória').max(100, 'Descrição muito longa'),
-  type: z.string().min(1, 'Tipo é obrigatório'),
-  amount: z.number().positive('Valor deve ser positivo')
-})
+type EntryData = CashFlowFormData
+type ExitData = CashFlowFormData
 
-const exitSchema = z.object({
-  description: z.string().min(1, 'Descrição é obrigatória').max(100, 'Descrição muito longa'),
-  type: z.string().min(1, 'Tipo é obrigatório'),
-  amount: z.number().positive('Valor deve ser positivo')
-})
+interface CashFlowEditorState {
+  isEditing: boolean
+  record: CashFlowRecord | null
+}
 
-type EntryData = z.infer<typeof entrySchema>
-type ExitData = z.infer<typeof exitSchema>
+interface PendingDeleteState {
+  type: 'entry' | 'exit'
+  record: CashFlowRecord
+}
+
+function createInitialEditorState(): CashFlowEditorState {
+  return {
+    isEditing: false,
+    record: null,
+  }
+}
+
+function formatarData(data: Date): string {
+  const dia = data.getDate().toString().padStart(2, '0')
+  const mes = (data.getMonth() + 1).toString().padStart(2, '0')
+  const ano = data.getFullYear()
+
+  return `${dia}/${mes}/${ano}`
+}
 
 function CashFlow() {
   const { id } = Route.useSearch()
@@ -85,7 +97,11 @@ function CashFlow() {
   const [saldoFinal, setSaldoFinal] = useState<number>(0)
   const [aplicacaoInvestimento, setAplicacaoInvestimento] = useState<number>(0)
   const [resgateAplicacao, setResgateAplicacao] = useState<number>(0)
+  const [entryEditorState, setEntryEditorState] = useState<CashFlowEditorState>(createInitialEditorState())
+  const [exitEditorState, setExitEditorState] = useState<CashFlowEditorState>(createInitialEditorState())
   const [isRestartConfirmOpen, setIsRestartConfirmOpen] = useState(false)
+  const [pendingDeleteRecord, setPendingDeleteRecord] = useState<PendingDeleteState | null>(null)
+  const [isDeletingRecord, setIsDeletingRecord] = useState(false)
   // Removido controle de localStorage
   const [categoriesLoading, setCategoriesLoading] = useState<boolean>(false)
   const [cashFlowLoading, setCashFlowLoading] = useState<boolean>(false)
@@ -103,75 +119,9 @@ function CashFlow() {
   //   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   // ]
 
-  // Função para obter o mês anterior e ano atual
-  const obterMesEAnoAtual = () => {
-    const hoje = new Date()
-    // const indiceMesAnterior = hoje.getMonth() - 1 // Mês anterior (0-11)
-    const ano = hoje.getFullYear()
-
-    // Se o mês anterior for -1 (janeiro atual), usar dezembro (índice 11)
-    // const indiceMesFinal = indiceMesAnterior < 0 ? 11 : indiceMesAnterior
-
-    // setMesAtual(nomesMeses[indiceMesFinal])
-    setAnoAtual(ano)
-  }
-
   // Estados para primeiro e último dia do mês atual
   const [primeiroDiaDoMes, setPrimeiroDiaDoMes] = useState<string>('')
   const [ultimoDiaDoMes, setUltimoDiaDoMes] = useState<string>('')
-
-  // Função para formatar data no formato DD/MM/YYYY
-  const formatarData = (data: Date): string => {
-    const dia = data.getDate().toString().padStart(2, '0')
-    const mes = (data.getMonth() + 1).toString().padStart(2, '0')
-    const ano = data.getFullYear()
-    return `${dia}/${mes}/${ano}`
-  }
-
-  // Função para calcular primeiro e último dia do mês anterior
-  const calcularDatasDoMes = () => {
-    const hoje = new Date()
-
-    // Primeiro dia do mês anterior
-    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)
-
-    // Último dia do mês anterior
-    const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth(), 0)
-
-    setPrimeiroDiaDoMes(formatarData(primeiroDia))
-    setUltimoDiaDoMes(formatarData(ultimoDia))
-  }
-
-  useEffect(() => {
-    calcularDatasDoMes()
-    obterMesEAnoAtual()
-
-    if (currentMovementId) {
-      loadCashFlowData(currentMovementId)
-    }
-  }, [currentMovementId])
-
-  const loadCashFlowData = async (id: string) => {
-    setCashFlowLoading(true)
-    try {
-      const data = await cashFlowService.getById(id)
-      if (data) {
-        setCashFlowInfo(data)
-        setSaldoInicial(data.initial_balance || 0)
-        setSaldoFinal(data.final_balance || 0)
-        setAplicacaoInvestimento(data.investment_application || 0)
-        setResgateAplicacao(data.redemption_application || 0)
-        setNameMonthExport(data.regard_month || '[error]')
-        setAnoAtual(Number(data.year) || new Date().getFullYear())
-      }
-      await reloadInflows()
-      await reloadOutflows()
-    } catch (error) {
-      console.error('Erro ao carregar dados do fluxo de caixa:', error)
-    } finally {
-      setCashFlowLoading(false)
-    }
-  }
 
   const handleUpdateBalance = async (field: keyof CashFlow, value: number) => {
     // Atualiza o estado local
@@ -241,22 +191,19 @@ function CashFlow() {
     }
   }
 
-  const entries = useMemo(
-    () => rawInflows.map(mapInflowToEntry),
-    [rawInflows, categories]
-  )
-  const exits = useMemo(
-    () => rawOutflows.map(mapOutflowToExit),
-    [rawOutflows, categories]
-  )
+  const entries = rawInflows.map(mapInflowToEntry)
+  const exits = rawOutflows.map(mapOutflowToExit)
   const totalEntries = entries.reduce((sum, entry) => sum + entry.amount, 0)
   const totalExits = exits.reduce((sum, exit) => sum + exit.amount, 0)
   const balance = totalEntries - totalExits
   const saldoMesComResgate = balance + resgateAplicacao
 
+  const resetEntryEditorState = () => setEntryEditorState(createInitialEditorState())
+  const resetExitEditorState = () => setExitEditorState(createInitialEditorState())
+
   // Carregamento de entradas/saídas do Supabase
 
-  const reloadInflows = async () => {
+  const reloadInflows = useCallback(async () => {
     if (!currentMovementId) return
     try {
       setInflowsLoading(true)
@@ -268,9 +215,9 @@ function CashFlow() {
     } finally {
       setInflowsLoading(false)
     }
-  }
+  }, [currentMovementId])
 
-  const reloadOutflows = async () => {
+  const reloadOutflows = useCallback(async () => {
     if (!currentMovementId) return
     try {
       setOutflowsLoading(true)
@@ -282,84 +229,193 @@ function CashFlow() {
     } finally {
       setOutflowsLoading(false)
     }
-  }
+  }, [currentMovementId])
+
+  const loadCashFlowData = useCallback(async (id: string) => {
+    setCashFlowLoading(true)
+    try {
+      const data = await cashFlowService.getById(id)
+      if (data) {
+        setCashFlowInfo(data)
+        setSaldoInicial(data.initial_balance || 0)
+        setSaldoFinal(data.final_balance || 0)
+        setAplicacaoInvestimento(data.investment_application || 0)
+        setResgateAplicacao(data.redemption_application || 0)
+        setNameMonthExport(data.regard_month || '[error]')
+        setAnoAtual(Number(data.year) || new Date().getFullYear())
+      }
+      await reloadInflows()
+      await reloadOutflows()
+    } catch (error) {
+      console.error('Erro ao carregar dados do fluxo de caixa:', error)
+    } finally {
+      setCashFlowLoading(false)
+    }
+  }, [reloadInflows, reloadOutflows])
 
   useEffect(() => {
-    if (currentMovementId) {
-      reloadInflows()
-      reloadOutflows()
-    }
-  }, [categories, currentMovementId])
+    const hoje = new Date()
+    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)
+    const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth(), 0)
 
-  const handleAddEntry = async (data: EntryData) => {
+    setPrimeiroDiaDoMes(formatarData(primeiroDia))
+    setUltimoDiaDoMes(formatarData(ultimoDia))
+    setAnoAtual(hoje.getFullYear())
+
+    if (currentMovementId) {
+      void loadCashFlowData(currentMovementId)
+    }
+  }, [currentMovementId, loadCashFlowData])
+
+  useEffect(() => {
+    resetEntryEditorState()
+    resetExitEditorState()
+    setPendingDeleteRecord(null)
+  }, [currentMovementId])
+
+  const getCategoryByName = (categoryName: string) =>
+    categories.find((category) => category.name === categoryName)
+
+  const handleSaveEntry = async (data: EntryData) => {
     if (!currentMovementId) {
       toast.error('Crie um fluxo de caixa antes de adicionar entradas.')
-      return
+      return false
     }
-    const category = categories.find(c => c.name === data.type)
+    const category = getCategoryByName(data.type)
     if (!category) {
       toast.error('Categoria inválida para entrada.')
-      return
+      return false
     }
+
+    const isEditingEntry = entryEditorState.isEditing && Boolean(entryEditorState.record)
+    const payload = {
+      cash_flow: currentMovementId,
+      category: category.id,
+      description: data.description,
+      inflow_value: data.amount
+    }
+
     try {
-      await inflowsService.create({
-        cash_flow: currentMovementId,
-        category: category.id,
-        description: data.description,
-        inflow_value: data.amount
-      })
-      toast.success('Entrada adicionada com sucesso!')
+      if (isEditingEntry && entryEditorState.record) {
+        await inflowsService.update(entryEditorState.record.id, payload)
+        toast.success('Entrada atualizada com sucesso!')
+        resetEntryEditorState()
+      } else {
+        await inflowsService.create(payload)
+        toast.success('Entrada adicionada com sucesso!')
+      }
+
       await reloadInflows()
+      return true
     } catch (error) {
       console.error('Erro ao adicionar entrada:', error)
-      toast.error('Erro ao adicionar entrada. Tente novamente.')
+      toast.error(
+        isEditingEntry
+          ? 'Erro ao atualizar entrada. Tente novamente.'
+          : 'Erro ao adicionar entrada. Tente novamente.'
+      )
+      return false
     }
   }
 
-  const handleAddExit = async (data: ExitData) => {
+  const handleSaveExit = async (data: ExitData) => {
     if (!currentMovementId) {
       toast.error('Crie um fluxo de caixa antes de adicionar saídas.')
-      return
+      return false
     }
-    const category = categories.find(c => c.name === data.type)
+    const category = getCategoryByName(data.type)
     if (!category) {
       toast.error('Categoria inválida para saída.')
-      return
+      return false
     }
+
+    const isEditingExit = exitEditorState.isEditing && Boolean(exitEditorState.record)
+    const payload = {
+      cash_flow: currentMovementId,
+      category: category.id,
+      description: data.description,
+      outflow_value: data.amount
+    }
+
     try {
-      await outflowsService.create({
-        cash_flow: currentMovementId,
-        category: category.id,
-        description: data.description,
-        outflow_value: data.amount
-      })
-      toast.success('Saída adicionada com sucesso!')
+      if (isEditingExit && exitEditorState.record) {
+        await outflowsService.update(exitEditorState.record.id, payload)
+        toast.success('Saída atualizada com sucesso!')
+        resetExitEditorState()
+      } else {
+        await outflowsService.create(payload)
+        toast.success('Saída adicionada com sucesso!')
+      }
+
       await reloadOutflows()
+      return true
     } catch (error) {
       console.error('Erro ao adicionar saída:', error)
-      toast.error('Erro ao adicionar saída. Tente novamente.')
+      toast.error(
+        isEditingExit
+          ? 'Erro ao atualizar saída. Tente novamente.'
+          : 'Erro ao adicionar saída. Tente novamente.'
+      )
+      return false
     }
   }
 
-  const handleDeleteEntry = async (id: string) => {
-    try {
-      await inflowsService.delete(id)
-      toast.success('Entrada excluída com sucesso!')
-      await reloadInflows()
-    } catch (error) {
-      console.error('Erro ao excluir entrada:', error)
-      toast.error('Erro ao excluir entrada. Tente novamente.')
-    }
+  const handleEditEntry = (entry: CashFlowRecord) => {
+    setEntryEditorState({
+      isEditing: true,
+      record: entry,
+    })
   }
 
-  const handleDeleteExit = async (id: string) => {
+  const handleEditExit = (exit: CashFlowRecord) => {
+    setExitEditorState({
+      isEditing: true,
+      record: exit,
+    })
+  }
+
+  const handleRequestDeleteEntry = (record: CashFlowRecord) => {
+    setPendingDeleteRecord({
+      type: 'entry',
+      record,
+    })
+  }
+
+  const handleRequestDeleteExit = (record: CashFlowRecord) => {
+    setPendingDeleteRecord({
+      type: 'exit',
+      record,
+    })
+  }
+
+  const handleConfirmDeleteRecord = async () => {
+    if (!pendingDeleteRecord) return
+
+    const { type, record } = pendingDeleteRecord
+
+    setIsDeletingRecord(true)
     try {
-      await outflowsService.delete(id)
-      toast.success('Saída excluída com sucesso!')
-      await reloadOutflows()
+      if (type === 'entry') {
+        await inflowsService.delete(record.id)
+        if (entryEditorState.record?.id === record.id) {
+          resetEntryEditorState()
+        }
+        toast.success('Entrada excluída com sucesso!')
+        await reloadInflows()
+      } else {
+        await outflowsService.delete(record.id)
+        if (exitEditorState.record?.id === record.id) {
+          resetExitEditorState()
+        }
+        toast.success('Saída excluída com sucesso!')
+        await reloadOutflows()
+      }
     } catch (error) {
-      console.error('Erro ao excluir saída:', error)
-      toast.error('Erro ao excluir saída. Tente novamente.')
+      console.error(`Erro ao excluir ${type === 'entry' ? 'entrada' : 'saída'}:`, error)
+      toast.error(`Erro ao excluir ${type === 'entry' ? 'entrada' : 'saída'}. Tente novamente.`)
+    } finally {
+      setIsDeletingRecord(false)
+      setPendingDeleteRecord(null)
     }
   }
 
@@ -371,6 +427,8 @@ function CashFlow() {
     setAplicacaoInvestimento(0)
     setResgateAplicacao(0)
     setCashFlowInfo(null)
+    resetEntryEditorState()
+    resetExitEditorState()
   }
 
   const handleRestart = () => {
@@ -382,6 +440,13 @@ function CashFlow() {
     resetCashFlowState()
     navigate({ to: '/' })
   }
+
+  const pendingDeleteLabel = pendingDeleteRecord
+    ? pendingDeleteRecord.type === 'entry' ? 'entrada' : 'saída'
+    : 'registro'
+  const pendingDeleteDescription = pendingDeleteRecord
+    ? `Tem certeza que deseja excluir a ${pendingDeleteLabel} "${pendingDeleteRecord.record.description}"? Esta ação não pode ser desfeita.`
+    : ''
 
   // Função para exportar para Excel
   const exportToExcel = () => {
@@ -1164,65 +1229,105 @@ function CashFlow() {
       <GlobalLoading visible={categoriesLoading || cashFlowLoading} text="Carregando dados..." />
       <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
         <div className="mb-6 sm:mb-8 space-y-4">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Voltar para Home
-          </Link>
-
           {currentMovementId ? (
-            <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 backdrop-blur-sm p-4 sm:p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <div className="text-xs font-medium uppercase tracking-wide text-zinc-400">
-                    Movimentação em visualização
+            <>
+              <button
+                type="button"
+                aria-label="Encerrar Sessão"
+                onClick={handleRestart}
+                className="group flex items-center"
+              >
+                <span className="h-3.5 w-3.5 rounded-full border border-[#d7473f] bg-[#ff5f57] shadow-[0_0_0_1px_rgba(0,0,0,0.2)_inset,0_6px_16px_rgba(255,95,87,0.28)] transition-transform duration-200 group-hover:scale-105" />
+                <span className="pointer-events-none ml-2 rounded-full border border-rose-500/30 bg-zinc-950/95 px-3 py-1 text-xs font-medium text-rose-100 shadow-lg shadow-black/30">
+                  Encerrar Sessão
+                </span>
+              </button>
+              <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
+                  <div className="min-w-0 rounded-xl border border-zinc-800/70 bg-zinc-950/30 p-4 sm:p-5">
+                    <div className="flex flex-col gap-5">
+                      <div className="min-w-0">
+                        <div className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
+                          Movimentação em visualização
+                        </div>
+                        {cashFlowLoading && !cashFlowInfo ? (
+                          <div className="mt-3 max-w-md">
+                            <Skeleton className="h-8 w-72" />
+                          </div>
+                        ) : (
+                          <div className="mt-2">
+                            <div className="truncate text-2xl font-semibold text-white">
+                              {cashFlowInfo?.name || '—'}
+                            </div>
+                            <p className="mt-1 text-sm text-zinc-400">
+                              Consulte os dados da referência e acesse as ações principais desta movimentação.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      <dl className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                        <div className="min-w-0 rounded-xl border border-zinc-800/70 bg-background/40 px-4 py-3">
+                          <dt className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-zinc-400">
+                            <span className="flex h-8 w-8 items-center rounded-lg bg-zinc-900/80 text-zinc-300">
+                              <CalendarDays className="h-4 w-4" />
+                            </span>
+                            Mês referente
+                          </dt>
+                          <dd className="mt-3 break-words text-base font-semibold text-white">
+                            {cashFlowInfo?.regard_month || nameMonthExport || '—'}
+                          </dd>
+                        </div>
+
+                        <div className="min-w-0 rounded-xl border border-zinc-800/70 bg-background/40 px-4 py-3">
+                          <dt className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-zinc-400">
+                            <span className="flex h-8 w-8 items-center rounded-lg bg-zinc-900/80 text-zinc-300">
+                              <CalendarDays className="h-4 w-4" />
+                            </span>
+                            Ano referente
+                          </dt>
+                          <dd className="mt-3 text-base font-semibold text-white">
+                            {cashFlowInfo?.year || (anoAtual ? String(anoAtual) : '—')}
+                          </dd>
+                        </div>
+
+                        <div className="min-w-0 rounded-xl border border-zinc-800/70 bg-background/40 px-4 py-3">
+                          <dt className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-zinc-400">
+                            <span className="flex h-8 w-8 items-center rounded-lg bg-zinc-900/80 text-zinc-300">
+                              <Clock className="h-4 w-4" />
+                            </span>
+                            Criado em
+                          </dt>
+                          <dd className="mt-3 text-base font-semibold text-white">
+                            {cashFlowInfo?.created_at ? new Date(cashFlowInfo.created_at).toLocaleDateString('pt-BR') : '—'}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
                   </div>
-                  {cashFlowLoading && !cashFlowInfo ? (
-                    <div className="mt-2 max-w-md">
-                      <Skeleton className="h-7 w-72" />
+
+                  <div className="min-w-0 rounded-xl border border-zinc-800/70 bg-zinc-950/30 p-4 sm:p-5">
+                    <div className="flex h-full flex-col gap-4">
+                      <div className="min-w-0">
+                        <div className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
+                          Ações da movimentação
+                        </div>
+                        <p className="mt-2 break-words text-sm text-zinc-400">
+                          Exporte os arquivos da referência atual ou encerre esta visualização quando concluir.
+                        </p>
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <ExportButtons
+                          onExportExcel={exportToExcel}
+                          onExportDocx={exportToDocx}
+                        />
+                      </div>
                     </div>
-                  ) : (
-                    <div className="mt-1 truncate text-lg sm:text-xl font-semibold text-white">
-                      {cashFlowInfo?.name || '—'}
-                    </div>
-                  )}
+                  </div>
                 </div>
-
-                <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                  <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/30 px-3 py-2.5">
-                    <dt className="flex items-center gap-2 text-xs font-medium text-zinc-400">
-                      <CalendarDays className="h-4 w-4 text-zinc-400" />
-                      Mês referente
-                    </dt>
-                    <dd className="mt-1 text-sm font-semibold text-white">
-                      {cashFlowInfo?.regard_month || nameMonthExport || '—'}
-                    </dd>
-                  </div>
-
-                  <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/30 px-3 py-2.5">
-                    <dt className="flex items-center gap-2 text-xs font-medium text-zinc-400">
-                      <CalendarDays className="h-4 w-4 text-zinc-400" />
-                      Ano referente
-                    </dt>
-                    <dd className="mt-1 text-sm font-semibold text-white">
-                      {cashFlowInfo?.year || (anoAtual ? String(anoAtual) : '—')}
-                    </dd>
-                  </div>
-
-                  <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/30 px-3 py-2.5">
-                    <dt className="flex items-center gap-2 text-xs font-medium text-zinc-400">
-                      <Clock className="h-4 w-4 text-zinc-400" />
-                      Criado em
-                    </dt>
-                    <dd className="mt-1 text-sm font-semibold text-white">
-                      {cashFlowInfo?.created_at ? new Date(cashFlowInfo.created_at).toLocaleDateString('pt-BR') : '—'}
-                    </dd>
-                  </div>
-                </dl>
               </div>
-            </div>
+            </>
           ) : null}
         </div>
 
@@ -1244,75 +1349,41 @@ function CashFlow() {
 
         {/* Formulários e tabelas - lado a lado em telas grandes, empilhados em pequenas */}
         <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 mb-6 sm:mb-8 w-full">
-          <div className="flex-1 space-y-6">
-            {isAdmin ? (
-              <CashFlowForm
-                title="Adicionar Entrada"
-                icon={<TrendingUp className="h-5 w-5 text-green-400" />}
-                types={categoryNames}
-                onSubmit={handleAddEntry}
-                schema={entrySchema}
-              />
-            ) : null}
-            {inflowsLoading ? (
-              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 overflow-hidden">
-                <div className="p-6 border-b border-zinc-800/50">
-                  <div className="flex justify-between items-center">
-                    <Skeleton className="h-6 w-48" />
-                    <Skeleton className="h-8 w-32" />
-                  </div>
-                </div>
-                <div className="p-4 space-y-3">
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                </div>
-              </div>
-            ) : (
-              <CashFlowTable
-                title="Entradas Registradas"
-                data={entries}
-                onDelete={handleDeleteEntry}
-                canDelete={isAdmin}
-                variant="entry"
-              />
-            )}
-          </div>
+          <CashFlowSection
+            formTitle={entryEditorState.isEditing ? 'Editar Entrada' : 'Adicionar Entrada'}
+            tableTitle="Entradas Registradas"
+            icon={<TrendingUp className="h-5 w-5 text-green-400" />}
+            types={categoryNames}
+            onSubmit={handleSaveEntry}
+            schema={entrySchema}
+            mode={entryEditorState.isEditing ? 'edit' : 'create'}
+            initialData={entryEditorState.record}
+            onCancelEdit={resetEntryEditorState}
+            data={entries}
+            isLoading={inflowsLoading}
+            canManage={isAdmin}
+            onDelete={handleRequestDeleteEntry}
+            onEdit={handleEditEntry}
+            variant="entry"
+          />
 
-          <div className="flex-1 space-y-6">
-            {isAdmin ? (
-              <CashFlowForm
-                title="Adicionar Saída"
-                icon={<TrendingDown className="h-5 w-5 text-red-400" />}
-                types={categoryNames}
-                onSubmit={handleAddExit}
-                schema={exitSchema}
-              />
-            ) : null}
-            {outflowsLoading ? (
-              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 overflow-hidden">
-                <div className="p-6 border-b border-zinc-800/50">
-                  <div className="flex justify-between items-center">
-                    <Skeleton className="h-6 w-48" />
-                    <Skeleton className="h-8 w-32" />
-                  </div>
-                </div>
-                <div className="p-4 space-y-3">
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                </div>
-              </div>
-            ) : (
-              <CashFlowTable
-                title="Saídas Registradas"
-                data={exits}
-                onDelete={handleDeleteExit}
-                canDelete={isAdmin}
-                variant="exit"
-              />
-            )}
-          </div>
+          <CashFlowSection
+            formTitle={exitEditorState.isEditing ? 'Editar Saída' : 'Adicionar Saída'}
+            tableTitle="Saídas Registradas"
+            icon={<TrendingDown className="h-5 w-5 text-red-400" />}
+            types={categoryNames}
+            onSubmit={handleSaveExit}
+            schema={exitSchema}
+            mode={exitEditorState.isEditing ? 'edit' : 'create'}
+            initialData={exitEditorState.record}
+            onCancelEdit={resetExitEditorState}
+            data={exits}
+            isLoading={outflowsLoading}
+            canManage={isAdmin}
+            onDelete={handleRequestDeleteExit}
+            onEdit={handleEditExit}
+            variant="exit"
+          />
         </div>
 
         {/* Saldos - sempre empilhados conforme solicitado */}
@@ -1386,12 +1457,6 @@ function CashFlow() {
             )}
           </div>
         </div>
-
-        <ExportButtons
-          onExportExcel={exportToExcel}
-          onExportDocx={exportToDocx}
-          onRestart={handleRestart}
-        />
       </div>
 
       <ConfirmationModal
@@ -1402,6 +1467,17 @@ function CashFlow() {
         description="Isso vai limpar os dados em tela e voltar para a Home."
         confirmText="Encerrar"
         cancelText="Cancelar"
+      />
+      <ConfirmationModal
+        isOpen={Boolean(pendingDeleteRecord)}
+        onClose={() => setPendingDeleteRecord(null)}
+        onConfirm={handleConfirmDeleteRecord}
+        title={`Excluir ${pendingDeleteLabel}?`}
+        description={pendingDeleteDescription}
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        isLoading={isDeletingRecord}
+        confirmVariant="destructive"
       />
     </div>
   )
