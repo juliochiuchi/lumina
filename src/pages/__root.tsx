@@ -14,11 +14,11 @@ function RootComponent() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center">
+      <>
         <HeadContent />
         <AccessModal />
         <Toaster />
-      </div>
+      </>
     )
   }
 
