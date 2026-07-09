@@ -39,6 +39,8 @@ const createMovementSchema = z.object({
 type FilterFormValues = z.infer<typeof filterSchema>
 type CreateMovementFormValues = z.infer<typeof createMovementSchema>
 
+const MIN_HOME_YEAR = 2025
+
 const MONTHS = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
@@ -76,10 +78,13 @@ function Index() {
     }
   })
 
-  // Generate a list of years for the dropdown (e.g., last 5 years + next year)
   useEffect(() => {
     const currentYear = new Date().getFullYear()
-    const yearList = Array.from({ length: 6 }, (_, i) => (currentYear - 4 + i).toString()).reverse()
+    const maxYear = Math.max(currentYear + 1, MIN_HOME_YEAR)
+    const yearList = Array.from(
+      { length: maxYear - MIN_HOME_YEAR + 1 },
+      (_, index) => (maxYear - index).toString(),
+    )
     setYears(yearList)
   }, [])
 

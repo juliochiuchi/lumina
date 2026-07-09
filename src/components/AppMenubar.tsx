@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router"
 import {
   BarChart3,
+  CalendarRange,
   FileDown,
   FileUp,
   FileText,
@@ -54,6 +55,12 @@ export function AppMenubar() {
                   <Link to="/accountability" className="flex items-center gap-2">
                     <ShieldCheck className="h-4 w-4" />
                     Prestação de contas
+                  </Link>
+                </MenubarItem>
+                <MenubarItem asChild>
+                  <Link to="/annual_presentation" className="flex items-center gap-2">
+                    <CalendarRange className="h-4 w-4" />
+                    Apresentação Anual
                   </Link>
                 </MenubarItem>
               </MenubarContent>

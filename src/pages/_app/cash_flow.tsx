@@ -21,6 +21,7 @@ import { FinancialSummary } from '@/components/FinancialSummary'
 import { GlobalLoading } from '@/components/ui/global-loading'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
+import { SessionExitButton } from '@/components/ui/session-exit-button'
 import { useAuth } from '@/contexts/use-auth'
 import { entrySchema, exitSchema } from '@/lib/cash-flow'
 import type { CashFlowFormData, CashFlowRecord } from '@/types/cash-flow'
@@ -1231,17 +1232,9 @@ function CashFlow() {
         <div className="mb-6 sm:mb-8 space-y-4">
           {currentMovementId ? (
             <>
-              <button
-                type="button"
-                aria-label="Encerrar Sessão"
-                onClick={handleRestart}
-                className="group flex items-center"
-              >
-                <span className="h-3.5 w-3.5 rounded-full border border-[#d7473f] bg-[#ff5f57] shadow-[0_0_0_1px_rgba(0,0,0,0.2)_inset,0_6px_16px_rgba(255,95,87,0.28)] transition-transform duration-200 group-hover:scale-105" />
-                <span className="pointer-events-none ml-2 rounded-full border border-rose-500/30 bg-zinc-950/95 px-3 py-1 text-xs font-medium text-rose-100 shadow-lg shadow-black/30">
-                  Encerrar Sessão
-                </span>
-              </button>
+              <SessionExitButton aria-label="Encerrar sessão" onClick={handleRestart}>
+                Encerrar sessão
+              </SessionExitButton>
               <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">
                 <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
                   <div className="min-w-0 rounded-xl border border-zinc-800/70 bg-zinc-950/30 p-4 sm:p-5">

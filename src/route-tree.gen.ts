@@ -14,6 +14,7 @@ import { Route as AppLayoutRouteImport } from './pages/_app/layout'
 import { Route as AppIndexRouteImport } from './pages/_app/index'
 import { Route as AppReceiptsRouteImport } from './pages/_app/receipts'
 import { Route as AppCash_flowRouteImport } from './pages/_app/cash_flow'
+import { Route as AppAnnual_presentationRouteImport } from './pages/_app/annual_presentation'
 import { Route as AppAccountabilityRouteImport } from './pages/_app/accountability'
 
 const AuthLayoutRoute = AuthLayoutRouteImport.update({
@@ -39,6 +40,11 @@ const AppCash_flowRoute = AppCash_flowRouteImport.update({
   path: '/cash_flow',
   getParentRoute: () => AppLayoutRoute,
 } as any)
+const AppAnnual_presentationRoute = AppAnnual_presentationRouteImport.update({
+  id: '/annual_presentation',
+  path: '/annual_presentation',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
 const AppAccountabilityRoute = AppAccountabilityRouteImport.update({
   id: '/accountability',
   path: '/accountability',
@@ -47,12 +53,14 @@ const AppAccountabilityRoute = AppAccountabilityRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/accountability': typeof AppAccountabilityRoute
+  '/annual_presentation': typeof AppAnnual_presentationRoute
   '/cash_flow': typeof AppCash_flowRoute
   '/receipts': typeof AppReceiptsRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
   '/accountability': typeof AppAccountabilityRoute
+  '/annual_presentation': typeof AppAnnual_presentationRoute
   '/cash_flow': typeof AppCash_flowRoute
   '/receipts': typeof AppReceiptsRoute
   '/': typeof AppIndexRoute
@@ -62,20 +70,32 @@ export interface FileRoutesById {
   '/_app': typeof AppLayoutRouteWithChildren
   '/_auth': typeof AuthLayoutRoute
   '/_app/accountability': typeof AppAccountabilityRoute
+  '/_app/annual_presentation': typeof AppAnnual_presentationRoute
   '/_app/cash_flow': typeof AppCash_flowRoute
   '/_app/receipts': typeof AppReceiptsRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/accountability' | '/cash_flow' | '/receipts' | '/'
+  fullPaths:
+    | '/accountability'
+    | '/annual_presentation'
+    | '/cash_flow'
+    | '/receipts'
+    | '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/accountability' | '/cash_flow' | '/receipts' | '/'
+  to:
+    | '/accountability'
+    | '/annual_presentation'
+    | '/cash_flow'
+    | '/receipts'
+    | '/'
   id:
     | '__root__'
     | '/_app'
     | '/_auth'
     | '/_app/accountability'
+    | '/_app/annual_presentation'
     | '/_app/cash_flow'
     | '/_app/receipts'
     | '/_app/'
@@ -123,6 +143,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCash_flowRouteImport
       parentRoute: typeof AppLayoutRoute
     }
+    '/_app/annual_presentation': {
+      id: '/_app/annual_presentation'
+      path: '/annual_presentation'
+      fullPath: '/annual_presentation'
+      preLoaderRoute: typeof AppAnnual_presentationRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
     '/_app/accountability': {
       id: '/_app/accountability'
       path: '/accountability'
@@ -135,6 +162,7 @@ declare module '@tanstack/react-router' {
 
 interface AppLayoutRouteChildren {
   AppAccountabilityRoute: typeof AppAccountabilityRoute
+  AppAnnual_presentationRoute: typeof AppAnnual_presentationRoute
   AppCash_flowRoute: typeof AppCash_flowRoute
   AppReceiptsRoute: typeof AppReceiptsRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -142,6 +170,7 @@ interface AppLayoutRouteChildren {
 
 const AppLayoutRouteChildren: AppLayoutRouteChildren = {
   AppAccountabilityRoute: AppAccountabilityRoute,
+  AppAnnual_presentationRoute: AppAnnual_presentationRoute,
   AppCash_flowRoute: AppCash_flowRoute,
   AppReceiptsRoute: AppReceiptsRoute,
   AppIndexRoute: AppIndexRoute,

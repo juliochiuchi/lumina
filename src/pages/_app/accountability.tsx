@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { cashFlowService, type CashFlowWithMovements } from '@/services/cashFlowService'
 import { CashBalanceChart } from '@/components/CashBalanceChart'
@@ -7,28 +7,34 @@ import { CategoryPieChart } from '@/components/CategoryPieChart'
 import { FinancialSummary } from '@/components/FinancialSummary'
 import { GlobalLoading } from '@/components/ui/global-loading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, Download } from 'lucide-react'
+import { Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SessionExitButton } from '@/components/ui/session-exit-button'
 import { exportAccountabilityToExcel } from '@/utils/exportAccountability'
 
 export const Route = createFileRoute('/_app/accountability')({
   component: AccountabilityPage,
 })
 
+const MIN_ACCOUNTABILITY_YEAR = 2026
+
 function AccountabilityPage() {
+  const navigate = useNavigate()
   const [movements, setMovements] = useState<CashFlowWithMovements[]>([])
   const [loading, setLoading] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
 
-  // Use current year as default
-  const currentYear = new Date().getFullYear().toString()
-  const [selectedYear, setSelectedYear] = useState(currentYear)
+  const currentYear = new Date().getFullYear()
+  const [selectedYear, setSelectedYear] = useState(Math.max(currentYear, MIN_ACCOUNTABILITY_YEAR).toString())
 
-  // Generate a list of years for the dropdown (e.g., last 5 years + next year)
   const [years, setYears] = useState<string[]>([])
 
   useEffect(() => {
-    const yearList = Array.from({ length: 6 }, (_, i) => (parseInt(currentYear) - 4 + i).toString()).reverse()
+    const maxYear = Math.max(currentYear + 1, MIN_ACCOUNTABILITY_YEAR)
+    const yearList = Array.from(
+      { length: maxYear - MIN_ACCOUNTABILITY_YEAR + 1 },
+      (_, index) => (maxYear - index).toString(),
+    )
     setYears(yearList)
   }, [currentYear])
 
@@ -65,20 +71,16 @@ function AccountabilityPage() {
   const balance = totalEntries - totalExits
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 sm:p-8">
+    <div className="min-h-screen bg-background text-foreground">
       <GlobalLoading visible={loading} text="Carregando dados..." />
 
-      <div className="mb-6 sm:mb-8">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Voltar
-        </Link>
-      </div>
+      <div className="container mx-auto max-w-7xl space-y-8 p-4 sm:p-6">
+        <div className="mb-6 sm:mb-8">
+          <SessionExitButton aria-label="Encerrar sessão" onClick={() => navigate({ to: '/' })}>
+            Encerrar sessão
+          </SessionExitButton>
+        </div>
 
-      <div className="container mx-auto max-w-7xl space-y-8">
         <div className="flex flex-col items-center space-y-4 lg:flex-row lg:items-end md:justify-between md:space-y-0">
           <div>
             <h1 className="mb-2 text-3xl font-bold tracking-tight text-white text-center lg:text-left">
