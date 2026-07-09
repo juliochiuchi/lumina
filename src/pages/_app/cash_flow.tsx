@@ -172,23 +172,25 @@ function CashFlow() {
     return byName ? byName.name : 'Categoria'
   }
 
-  function mapInflowToEntry(row: Inflow): (EntryData & { id: string; date: string }) {
+  function mapInflowToEntry(row: Inflow): CashFlowRecord {
     return {
       id: row.id,
       description: row.description,
       type: getCategoryName(row.category),
       amount: row.inflow_value,
-      date: row.created_at ? new Date(row.created_at).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')
+      date: row.created_at ? new Date(row.created_at).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR'),
+      createdAt: row.created_at,
     }
   }
 
-  function mapOutflowToExit(row: Outflow): (ExitData & { id: string; date: string }) {
+  function mapOutflowToExit(row: Outflow): CashFlowRecord {
     return {
       id: row.id,
       description: row.description,
       type: getCategoryName(row.category),
       amount: row.outflow_value,
-      date: row.created_at ? new Date(row.created_at).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')
+      date: row.created_at ? new Date(row.created_at).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR'),
+      createdAt: row.created_at,
     }
   }
 

@@ -9,4 +9,5 @@ export interface CashFlowFormData {
 export interface CashFlowRecord extends CashFlowFormData {
   id: string
   date: string
+  createdAt?: string
 }

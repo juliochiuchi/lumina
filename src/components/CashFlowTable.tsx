@@ -1,6 +1,5 @@
-import { Pencil, Trash2, Calendar, Tag, DollarSign } from 'lucide-react'
+import { Pencil, Trash2, Tag, DollarSign, Clock3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { TruncatedText } from '@/components/ui/truncated-text'
 import type { CashFlowRecord } from '@/types/cash-flow'
 
 interface CashFlowTableProps {
@@ -25,6 +24,16 @@ export function CashFlowTable({
   const total = data.reduce((sum, item) => sum + item.amount, 0)
   const dotColorClass = variant === 'entry' ? 'bg-[#4ade80]' : 'bg-[#f87171]'
   const totalBgColorClass = variant === 'entry' ? 'bg-emerald-500/10' : 'bg-rose-500/10'
+  const editButtonClass = 'h-9 border border-zinc-600/60 bg-zinc-800/80 px-3 text-zinc-200 hover:bg-zinc-700 hover:text-white'
+
+  const formatCreatedAt = (createdAt?: string) => {
+    if (!createdAt) return 'Data indisponivel'
+
+    return new Intl.DateTimeFormat('pt-BR', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }).format(new Date(createdAt))
+  }
 
   if (data.length === 0) {
     return (
@@ -66,39 +75,37 @@ export function CashFlowTable({
         </div>
       </div>
 
-      <div className="max-h-96 overflow-y-auto">
+      <div className="max-h-96 overflow-y-auto pr-1 [scrollbar-color:rgba(113,113,122,0.7)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-[3px] [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-600/80 [&::-webkit-scrollbar-thumb:hover]:bg-zinc-500">
         <div className="p-4 space-y-3">
           {data.map((item) => (
             <div
               key={item.id}
-              className="group relative overflow-hidden bg-zinc-800/30 hover:bg-zinc-800/50 rounded-lg p-4 border border-zinc-700/50 hover:border-zinc-600/50 transition-all duration-200"
+              className="relative overflow-hidden rounded-xl border border-zinc-700/50 bg-zinc-800/30 p-4 transition-all duration-200 hover:border-zinc-600/60 hover:bg-zinc-800/50"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className={`w-2 h-2 rounded-full ${dotColorClass} flex-shrink-0`}></div>
-                    <TruncatedText
-                      text={item.description}
-                      className="text-zinc-100 font-medium"
-                    />
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-3 flex items-center gap-3">
+                    <div className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${dotColorClass}`}></div>
+                    <span className="truncate text-base font-semibold text-zinc-100">
+                      {item.description}
+                    </span>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-4 text-sm">
-                    <div className="flex items-center gap-1.5 text-zinc-400">
-                      <Tag className="h-3.5 w-3.5" />
-                      <span>{item.type}</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700/50 bg-zinc-900/40 px-2.5 py-1.5 text-sm text-zinc-300">
+                      <Tag className="h-3.5 w-3.5 text-zinc-400" />
+                      <span>Categoria: {item.type}</span>
                     </div>
-
-                    <div className="flex items-center gap-1.5 text-zinc-400">
-                      <Calendar className="h-3.5 w-3.5" />
-                      <span>{item.date}</span>
+                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700/50 bg-zinc-900/40 px-2.5 py-1.5 text-sm text-zinc-300">
+                      <Clock3 className="h-3.5 w-3.5 text-zinc-400" />
+                      <span>Cadastro: {formatCreatedAt(item.createdAt)}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="ml-4 flex flex-shrink-0 items-center gap-2">
-                  <div className="min-w-0 text-right">
-                    <div className="text-lg font-semibold text-zinc-100">
+                <div className="flex flex-col gap-3 md:items-end">
+                  <div className="min-w-0">
+                    <div className="text-lg font-bold text-zinc-100 md:text-right">
                       {new Intl.NumberFormat('pt-BR', {
                         style: 'currency',
                         currency: 'BRL'
@@ -106,27 +113,31 @@ export function CashFlowTable({
                     </div>
                   </div>
 
-                  {canEdit && onEdit ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(item)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-zinc-300 hover:text-white hover:bg-zinc-700/40 h-8 w-8 p-0"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  ) : null}
+                  <div className="flex items-center gap-2">
+                    {canEdit && onEdit ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(item)}
+                        className={editButtonClass}
+                      >
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Editar
+                      </Button>
+                    ) : null}
 
-                  {canDelete && onDelete ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDelete(item)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8 p-0"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  ) : null}
+                    {canDelete && onDelete ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDelete(item)}
+                        className="h-9 border border-red-500/20 bg-red-500/10 px-3 text-red-300 hover:bg-red-500/20 hover:text-white"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Excluir
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </div>

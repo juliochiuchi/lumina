@@ -15,7 +15,8 @@ export const outflowsService = {
       .from('outflows')
       .select('*')
       .eq('cash_flow', cashFlowId)
-      .order('id', { ascending: true })
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
 
     if (error) {
       throw error
