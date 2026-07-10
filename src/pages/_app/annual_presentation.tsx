@@ -66,12 +66,10 @@ function AnnualPresentationPage() {
   const endingMovement = decemberMovement ?? lastMovement
   const annualBankInitialBalance = Number(januaryMovement?.initial_balance || 0)
   const annualBankFinalBalance = Number(endingMovement?.final_balance || 0)
-  const annualBankBalance = annualBankInitialBalance - annualBankFinalBalance
+  const annualBankBalance = annualBankFinalBalance - annualBankInitialBalance
   const annualInvestmentInitialBalance = Number(januaryMovement?.investment_application || 0)
   const annualInvestmentFinalBalance = Number(endingMovement?.investment_application || 0)
-  const annualInvestmentBalance = annualInvestmentInitialBalance - annualInvestmentFinalBalance
-  const endingMonthLabel = endingMovement?.regard_month ?? 'Último mês'
-
+  const annualInvestmentBalance = annualInvestmentFinalBalance - annualInvestmentInitialBalance
   const years = useMemo(() => {
     const maxYear = Math.max(currentYear + 1, MIN_ANNUAL_PRESENTATION_YEAR)
     const length = maxYear - MIN_ANNUAL_PRESENTATION_YEAR + 1
@@ -198,7 +196,7 @@ function AnnualPresentationPage() {
               <div className="rounded-xl border border-border/70 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
                 {formatCurrency(summary.totalRevenue)} - {formatCurrency(summary.totalExpense)} ={' '}
                 <span className={totalBalance >= 0 ? 'font-semibold text-sky-400' : 'font-semibold text-rose-400'}>
-                  {formatCurrency(totalBalance)}
+                  {formatCurrency(totalBalance)} <span className="font-thin text-[0.7rem] font-inter">(RECEITAS - DESPESAS = RESULTADO)</span>
                 </span>
               </div>
             </CardContent>
@@ -214,7 +212,7 @@ function AnnualPresentationPage() {
                 <div className="space-y-1">
                   <CardTitle className="text-xl text-foreground">Saldo Bancário Anual</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Resultado do saldo inicial de janeiro menos o saldo final de dezembro, com fallback para o último mês com movimentação.
+                    Resultado do saldo bancário do ano, com fallback para o último mês com movimentação.
                   </p>
                 </div>
               </div>
@@ -222,16 +220,16 @@ function AnnualPresentationPage() {
 
             <CardContent className="space-y-4">
               <div className="rounded-xl border border-border/80 bg-background/60 p-4">
-                <p className="text-sm text-muted-foreground">Saldo inicial de janeiro - saldo final de {endingMonthLabel.toLowerCase()}</p>
+                <p className="text-sm text-muted-foreground">Saldo bancário do ano</p>
                 <p className={`mt-2 text-3xl font-semibold tracking-tight ${annualBankBalance >= 0 ? 'text-amber-400' : 'text-rose-400'}`}>
                   {formatCurrency(annualBankBalance)}
                 </p>
               </div>
 
               <div className="rounded-xl border border-border/70 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
-                {formatCurrency(annualBankInitialBalance)} - {formatCurrency(annualBankFinalBalance)} ={' '}
+                {formatCurrency(annualBankFinalBalance)} - {formatCurrency(annualBankInitialBalance)} ={' '}
                 <span className={annualBankBalance >= 0 ? 'font-semibold text-amber-400' : 'font-semibold text-rose-400'}>
-                  {formatCurrency(annualBankBalance)}
+                  {formatCurrency(annualBankBalance)} <span className="font-thin text-[0.7rem] font-inter">(FINAL - INICIAL = RESULTADO)</span>
                 </span>
               </div>
             </CardContent>
@@ -247,7 +245,7 @@ function AnnualPresentationPage() {
                 <div className="space-y-1">
                   <CardTitle className="text-xl text-foreground">Saldo de Aplicação Anual</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Resultado do valor de aplicação de janeiro menos o valor de aplicação de dezembro, com fallback para o último mês com movimentação.
+                    Resultado do valor de aplicação do ano, com fallback para o último mês com movimentação.
                   </p>
                 </div>
               </div>
@@ -256,7 +254,7 @@ function AnnualPresentationPage() {
             <CardContent className="space-y-4">
               <div className="rounded-xl border border-border/80 bg-background/60 p-4">
                 <p className="text-sm text-muted-foreground">
-                  Aplicação de janeiro - aplicação de {endingMonthLabel.toLowerCase()}
+                  Saldo de aplicação do ano
                 </p>
                 <p className={`mt-2 text-3xl font-semibold tracking-tight ${annualInvestmentBalance >= 0 ? 'text-violet-400' : 'text-rose-400'}`}>
                   {formatCurrency(annualInvestmentBalance)}
@@ -264,9 +262,9 @@ function AnnualPresentationPage() {
               </div>
 
               <div className="rounded-xl border border-border/70 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
-                {formatCurrency(annualInvestmentInitialBalance)} - {formatCurrency(annualInvestmentFinalBalance)} ={' '}
+                {formatCurrency(annualInvestmentFinalBalance)} - {formatCurrency(annualInvestmentInitialBalance)} ={' '}
                 <span className={annualInvestmentBalance >= 0 ? 'font-semibold text-violet-400' : 'font-semibold text-rose-400'}>
-                  {formatCurrency(annualInvestmentBalance)}
+                  {formatCurrency(annualInvestmentBalance)} <span className="font-thin text-[0.7rem] font-inter">(FINAL - INICIAL = RESULTADO)</span>
                 </span>
               </div>
             </CardContent>
