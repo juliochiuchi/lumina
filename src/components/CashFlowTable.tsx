@@ -62,7 +62,7 @@ export function CashFlowTable({
     : 'border-rose-500/20 bg-rose-500/10'
   const totalTextColorClass = variant === 'entry' ? 'text-emerald-100' : 'text-rose-100'
   const accentBorderClass = variant === 'entry' ? 'before:bg-emerald-400/80' : 'before:bg-rose-400/80'
-  const hasActions = (canDelete && onDelete) || (canEdit && onEdit)
+  const infoBlockClass = 'rounded-xl border border-zinc-800/70 bg-zinc-950/55 px-3 py-2.5'
   const formattedTotal = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
@@ -74,7 +74,7 @@ export function CashFlowTable({
   }).format(value)
 
   const formatCreatedAt = (createdAt?: string) => {
-    if (!createdAt) return 'Data indisponivel'
+    if (!createdAt) return 'Data indisponível'
 
     return new Intl.DateTimeFormat('pt-BR', {
       dateStyle: 'short',
@@ -144,14 +144,14 @@ export function CashFlowTable({
             <div
               key={item.id}
               className={cn(
-                'relative overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-950/30 px-4 py-4 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.9)] transition-all duration-200 hover:border-zinc-700/80 hover:bg-zinc-900/40',
-                'before:absolute before:bottom-4 before:left-0 before:top-4 before:w-px',
+                'relative overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-950/35 px-4 py-3.5 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.9)] transition-all duration-200 hover:border-zinc-700/80 hover:bg-zinc-900/40',
+                'before:absolute before:bottom-3 before:left-0 before:top-3 before:w-px',
                 accentBorderClass
               )}
             >
-              <div className="mb-4 flex items-center justify-between gap-3 pl-3">
-                {hasActions ? (
-                  <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-3 pl-3">
+                <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
+                  <div className="flex items-center gap-2 justify-self-start">
                     {canDelete && onDelete ? (
                       <ActionButton
                         label="Excluir"
@@ -169,41 +169,51 @@ export function CashFlowTable({
                       />
                     ) : null}
                   </div>
-                ) : (
-                  <div />
-                )}
 
-                <div className="inline-flex items-center justify-center gap-1.5 rounded-full border border-zinc-800/80 bg-zinc-950/60 px-3 py-1.5 text-sm text-zinc-400">
-                  <Clock3 className="h-3.5 w-3.5 flex-shrink-0 text-zinc-500" />
-                  <span className="truncate text-center">{formatCreatedAt(item.createdAt)}</span>
-                </div>
-              </div>
-
-              <div className="grid items-center gap-3 pl-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-4">
-                <div className="min-w-0">
-                  <div className="line-clamp-2 text-base font-semibold leading-5 text-zinc-100">
-                    {item.description}
-                  </div>
-                  <div className="mt-3 rounded-2xl border border-zinc-800/80 bg-zinc-950/60 px-3 py-2.5">
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-400">
-                      <div className="inline-flex min-w-0 items-center gap-1.5">
-                        <Tag className="h-3.5 w-3.5 flex-shrink-0 text-zinc-500" />
-                        <span className="truncate">{item.type}</span>
-                      </div>
+                  <div className={cn(infoBlockClass, 'min-w-0 justify-self-end px-3 py-2 text-right')}>
+                    <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">
+                      Valor
+                    </div>
+                    <div className="mt-1 whitespace-normal break-words text-base font-semibold leading-5 text-zinc-100 sm:text-lg">
+                      {formatCurrency(item.amount)}
                     </div>
                   </div>
                 </div>
 
-                <div className="sm:justify-self-end">
-                  <div className="flex min-h-[88px] min-w-[180px] flex-col items-center justify-center rounded-2xl border border-zinc-800/80 bg-zinc-950/60 px-4 py-3 text-center">
-                    <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">
-                      Valor
-                    </span>
-                    <span className="mt-1 text-lg font-semibold leading-none text-zinc-100 sm:text-xl">
-                      {formatCurrency(item.amount)}
-                    </span>
+                <dl className="grid gap-2 md:grid-cols-2">
+                  <div className={cn(infoBlockClass, 'md:col-span-2')}>
+                    <dt className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">
+                      Descrição
+                    </dt>
+                    <dd className="mt-1.5 whitespace-normal break-words text-sm font-medium leading-5 text-zinc-100">
+                      {item.description}
+                    </dd>
                   </div>
-                </div>
+
+                  <div className={infoBlockClass}>
+                    <dt className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">
+                      Categoria
+                    </dt>
+                    <dd className="mt-1.5 flex items-start gap-2 text-sm text-zinc-200">
+                      <Tag className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-zinc-500" />
+                      <span className="whitespace-normal break-words">
+                        {item.type}
+                      </span>
+                    </dd>
+                  </div>
+
+                  <div className={infoBlockClass}>
+                    <dt className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">
+                      Registrado em
+                    </dt>
+                    <dd className="mt-1.5 flex items-start gap-2 text-sm text-zinc-200">
+                      <Clock3 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-zinc-500" />
+                      <span className="whitespace-normal break-words">
+                        {formatCreatedAt(item.createdAt)}
+                      </span>
+                    </dd>
+                  </div>
+                </dl>
               </div>
             </div>
           ))}
