@@ -14,7 +14,7 @@ export default defineConfig({
       routeToken: 'layout',
     }),
     react()],
-    resolve: {
+  resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
