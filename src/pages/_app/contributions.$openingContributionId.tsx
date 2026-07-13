@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react"
-import { ArrowLeft, Award, CalendarDays, Coins, Gift, Search, ShieldAlert, Wallet } from "lucide-react"
+import { ArrowLeft, Award, CalendarDays, Coins, Gift, Search, Wallet } from "lucide-react"
 import { toast } from "sonner"
 
+import { AccessRestrictedCard } from "@/components/AccessRestrictedCard"
 import { ContributionsEditableTable } from "@/components/contributions/ContributionsEditableTable"
 import { OfferDetailsModal } from "@/components/contributions/OfferDetailsModal"
 import { OfferFormModal } from "@/components/contributions/OfferFormModal"
@@ -230,12 +231,12 @@ function ContributionsPage() {
           rows: current.rows.map((row) =>
             row.memberId === memberId
               ? {
-                  ...row,
-                  valuesBySunday: {
-                    ...row.valuesBySunday,
-                    [dateSunday]: amount,
-                  },
-                }
+                ...row,
+                valuesBySunday: {
+                  ...row.valuesBySunday,
+                  [dateSunday]: amount,
+                },
+              }
               : row,
           ),
         }
@@ -331,28 +332,7 @@ function ContributionsPage() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-background p-4 text-foreground sm:p-8">
-        <div className="container mx-auto flex max-w-3xl items-center justify-center">
-          <Card className="w-full border-border bg-card">
-            <CardHeader className="space-y-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-300">
-                <ShieldAlert className="h-6 w-6" />
-              </div>
-              <div className="space-y-2">
-                <CardTitle className="text-2xl text-foreground">Acesso restrito</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Apenas usuários com permissão administrativa podem acessar a área de contribuições.
-                </p>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" onClick={() => navigate({ to: "/" })}>
-                Voltar ao painel
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <AccessRestrictedCard description="Apenas usuários com permissão administrativa podem acessar a área de contribuições." />
     )
   }
 
