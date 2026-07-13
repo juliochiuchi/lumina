@@ -1,6 +1,6 @@
 import { formatCurrency } from "@/lib/currency"
 
-export const TITHE_CONTRIBUTION_TYPE = "dizimo"
+export const TITHE_CONTRIBUTION_TYPE = "dízimo"
 export const OFFER_CONTRIBUTION_TYPE = "oferta"
 
 function normalizeContributionKey(value: string | null | undefined) {
