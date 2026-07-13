@@ -26,6 +26,7 @@ import {
 type PreviewMap = Record<string, number | null>
 
 type ContributionsEditableTableProps = {
+  canEditMemberValues?: boolean
   rows: MonthlyContributionMemberRow[]
   sundays: ContributionSunday[]
   offersBySunday: Record<string, MonthlyContributionOfferEntry[]>
@@ -38,6 +39,7 @@ type ContributionsEditableTableProps = {
 }
 
 type EditableContributionCellProps = {
+  canEdit: boolean
   cellKey: string
   value: number | null
   isSaving: boolean
@@ -68,6 +70,7 @@ function getNumericCellClassName() {
 }
 
 function EditableContributionCell({
+  canEdit,
   cellKey,
   value,
   isSaving,
@@ -99,7 +102,7 @@ function EditableContributionCell({
     }
   }
 
-  if (isEditing) {
+  if (canEdit && isEditing) {
     return (
       <Input
         value={draftValue}
@@ -130,6 +133,19 @@ function EditableContributionCell({
     )
   }
 
+  if (!canEdit) {
+    return (
+      <span
+        className={cn(
+          "block min-h-8 w-full min-w-24 px-2 py-1 text-right text-sm tabular-nums",
+          value === null ? "text-muted-foreground" : "text-foreground",
+        )}
+      >
+        {value === null ? "-" : formatContributionValue(value)}
+      </span>
+    )
+  }
+
   return (
     <button
       type="button"
@@ -146,6 +162,7 @@ function EditableContributionCell({
 }
 
 export function ContributionsEditableTable({
+  canEditMemberValues = true,
   rows,
   sundays,
   offersBySunday,
@@ -256,6 +273,7 @@ export function ContributionsEditableTable({
                 return (
                   <TableCell key={cellKey} className="px-3">
                     <EditableContributionCell
+                      canEdit={canEditMemberValues}
                       cellKey={cellKey}
                       value={visibleValue}
                       isSaving={savingCellKeys.has(cellKey)}

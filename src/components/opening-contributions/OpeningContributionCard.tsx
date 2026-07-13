@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface OpeningContributionCardProps {
+  canManage: boolean
   openingContribution: OpeningContributionWithTotal
   onView: (openingContribution: OpeningContributionWithTotal) => void
   onEdit: (openingContribution: OpeningContributionWithTotal) => void
@@ -13,6 +14,7 @@ interface OpeningContributionCardProps {
 }
 
 export function OpeningContributionCard({
+  canManage,
   openingContribution,
   onView,
   onEdit,
@@ -56,28 +58,32 @@ export function OpeningContributionCard({
           >
             <Eye className="h-4 w-4" />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-foreground"
-            onClick={() => onEdit(openingContribution)}
-            aria-label="Editar abertura"
-            title="Editar"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="text-rose-400 hover:text-rose-300"
-            onClick={() => onDelete(openingContribution)}
-            aria-label="Excluir abertura"
-            title="Excluir"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {canManage ? (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => onEdit(openingContribution)}
+                aria-label="Editar abertura"
+                title="Editar"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="text-rose-400 hover:text-rose-300"
+                onClick={() => onDelete(openingContribution)}
+                aria-label="Excluir abertura"
+                title="Excluir"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </>
+          ) : null}
         </div>
       </CardContent>
     </Card>

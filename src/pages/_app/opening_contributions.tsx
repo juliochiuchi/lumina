@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react"
 import { CalendarRange, Plus } from "lucide-react"
 import { toast } from "sonner"
 
-import { AccessRestrictedCard } from "@/components/AccessRestrictedCard"
 import {
   OpeningContributionCard,
 } from "@/components/opening-contributions/OpeningContributionCard"
@@ -90,8 +89,6 @@ function OpeningContributionsPage() {
   )
 
   useEffect(() => {
-    if (!isAdmin) return
-
     const fetchAvailableYears = async () => {
       try {
         const years = await openingContributionsService.getAvailableYears()
@@ -115,10 +112,10 @@ function OpeningContributionsPage() {
     }
 
     void fetchAvailableYears()
-  }, [currentYear, isAdmin])
+  }, [currentYear])
 
   useEffect(() => {
-    if (!isAdmin || !selectedYear) return
+    if (!selectedYear) return
 
     const fetchOpenings = async () => {
       setLoading(true)
@@ -135,14 +132,17 @@ function OpeningContributionsPage() {
     }
 
     void fetchOpenings()
-  }, [isAdmin, selectedYear])
+  }, [selectedYear])
 
   const handleOpenCreateModal = () => {
+    if (!isAdmin) return
     setSelectedOpeningContribution(null)
     setIsModalOpen(true)
   }
 
   const handleOpenEditModal = async (openingContribution: OpeningContributionWithTotal) => {
+    if (!isAdmin) return
+
     setIsPreparingModal(true)
 
     try {
@@ -164,6 +164,8 @@ function OpeningContributionsPage() {
   }
 
   const handleSubmitOpeningContribution = async (payload: OpeningContributionFormPayload) => {
+    if (!isAdmin) return
+
     setIsSubmitting(true)
 
     try {
@@ -208,7 +210,7 @@ function OpeningContributionsPage() {
   }
 
   const handleDeleteOpeningContribution = async () => {
-    if (!openingToDelete) return
+    if (!isAdmin || !openingToDelete) return
 
     setIsDeleting(true)
 
@@ -234,12 +236,6 @@ function OpeningContributionsPage() {
     } finally {
       setIsDeleting(false)
     }
-  }
-
-  if (!isAdmin) {
-    return (
-      <AccessRestrictedCard description="Apenas usuários com permissão administrativa podem acessar a área de contribuições." />
-    )
   }
 
   return (
@@ -286,16 +282,20 @@ function OpeningContributionsPage() {
               <div>
                 <h1 className="text-3xl font-bold tracking-tight text-foreground">Abertura de Contribuições</h1>
                 <p className="text-sm text-muted-foreground">
-                  Organize as aberturas mensais e acompanhe o total arrecadado de cada período.
+                  {isAdmin
+                    ? "Organize as aberturas mensais e acompanhe o total arrecadado de cada período."
+                    : "Consulte as aberturas mensais e acompanhe o total arrecadado de cada período."}
                 </p>
               </div>
             </div>
           </div>
 
-          <Button onClick={handleOpenCreateModal} className="w-full sm:w-auto">
-            <Plus className="h-4 w-4" />
-            Cadastrar nova abertura
-          </Button>
+          {isAdmin ? (
+            <Button onClick={handleOpenCreateModal} className="w-full sm:w-auto">
+              <Plus className="h-4 w-4" />
+              Cadastrar nova abertura
+            </Button>
+          ) : null}
         </div>
 
         <Card className="border-border bg-card shadow-sm">
@@ -350,6 +350,7 @@ function OpeningContributionsPage() {
             {openingContributions.map((openingContribution) => (
               <OpeningContributionCard
                 key={openingContribution.id}
+                canManage={isAdmin}
                 openingContribution={openingContribution}
                 onView={(selected) =>
                   navigate({

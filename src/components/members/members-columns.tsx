@@ -6,15 +6,17 @@ import { formatCpf } from "@/lib/cpf"
 import type { Member } from "@/services/membersService"
 
 interface MembersColumnsOptions {
+  canManage: boolean
   onEdit: (member: Member) => void
   onDelete: (member: Member) => void
 }
 
 export function getMembersColumns({
+  canManage,
   onEdit,
   onDelete,
 }: MembersColumnsOptions): ColumnDef<Member>[] {
-  return [
+  const columns: ColumnDef<Member>[] = [
     {
       accessorKey: "name",
       header: "Nome",
@@ -29,7 +31,10 @@ export function getMembersColumns({
         </span>
       ),
     },
-    {
+  ]
+
+  if (canManage) {
+    columns.push({
       id: "actions",
       header: "Ações",
       enableSorting: false,
@@ -59,6 +64,8 @@ export function getMembersColumns({
           </Button>
         </div>
       ),
-    },
-  ]
+    })
+  }
+
+  return columns
 }

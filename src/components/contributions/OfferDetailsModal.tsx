@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 
 type OfferDetailsModalProps = {
   isOpen: boolean
+  canManageOffers?: boolean
   sunday: ContributionSunday | null
   entries: MonthlyContributionOfferEntry[]
   deletingOfferId?: string | null
@@ -16,6 +17,7 @@ type OfferDetailsModalProps = {
 
 export function OfferDetailsModal({
   isOpen,
+  canManageOffers = true,
   sunday,
   entries,
   deletingOfferId = null,
@@ -63,20 +65,22 @@ export function OfferDetailsModal({
                     <span className="block font-medium text-foreground">Oferta {index + 1}</span>
                     <span className="block text-sm text-emerald-400">{formatContributionCurrency(entry.amount)}</span>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-destructive"
-                    disabled={deletingOfferId === entry.id}
-                    onClick={() => {
-                      void onDeleteOffer(entry.id)
-                    }}
-                    aria-label={`Excluir oferta ${index + 1}`}
-                    title="Excluir oferta"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {canManageOffers ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-destructive"
+                      disabled={deletingOfferId === entry.id}
+                      onClick={() => {
+                        void onDeleteOffer(entry.id)
+                      }}
+                      aria-label={`Excluir oferta ${index + 1}`}
+                      title="Excluir oferta"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  ) : null}
                 </div>
               ))}
 

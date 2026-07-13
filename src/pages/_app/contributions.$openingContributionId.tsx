@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react"
 import { ArrowLeft, Award, CalendarDays, Coins, Gift, Search, Wallet } from "lucide-react"
 import { toast } from "sonner"
 
-import { AccessRestrictedCard } from "@/components/AccessRestrictedCard"
 import { ContributionsEditableTable } from "@/components/contributions/ContributionsEditableTable"
 import { OfferDetailsModal } from "@/components/contributions/OfferDetailsModal"
 import { OfferFormModal } from "@/components/contributions/OfferFormModal"
@@ -74,10 +73,6 @@ function ContributionsPage() {
   const [searchTerm, setSearchTerm] = useState("")
 
   useEffect(() => {
-    if (!isAdmin) {
-      return
-    }
-
     const fetchSheet = async () => {
       setLoading(true)
 
@@ -94,7 +89,7 @@ function ContributionsPage() {
     }
 
     void fetchSheet()
-  }, [isAdmin, openingContributionId])
+  }, [openingContributionId])
 
   const summary = useMemo(() => {
     if (!sheet) {
@@ -185,6 +180,10 @@ function ContributionsPage() {
   }, [previewValues, sheet])
 
   const handlePreviewChange = (cellKey: string, value?: number | null) => {
+    if (!isAdmin) {
+      return
+    }
+
     setPreviewValues((current) => {
       const next = { ...current }
 
@@ -199,7 +198,7 @@ function ContributionsPage() {
   }
 
   const handleCommitMemberValue = async (memberId: string, dateSunday: string, amount: number | null) => {
-    if (!sheet) {
+    if (!isAdmin || !sheet) {
       return false
     }
 
@@ -242,6 +241,14 @@ function ContributionsPage() {
         }
       })
 
+      if (amount === null) {
+        toast.success("Valor de dízimo removido com sucesso")
+      } else if (persistedValue === null) {
+        toast.success("Dízimo adicionado com sucesso")
+      } else {
+        toast.success("Dízimo atualizado com sucesso")
+      }
+
       return true
     } catch (error) {
       console.error(error)
@@ -257,7 +264,7 @@ function ContributionsPage() {
   }
 
   const handleSubmitOffer = async (payload: { dateSunday: string; amount: number }) => {
-    if (!sheet) {
+    if (!isAdmin || !sheet) {
       return
     }
 
@@ -295,7 +302,7 @@ function ContributionsPage() {
   }
 
   const handleDeleteOffer = async (offerId: string) => {
-    if (!sheet || !selectedOfferDetailsDate) {
+    if (!isAdmin || !sheet || !selectedOfferDetailsDate) {
       return
     }
 
@@ -330,12 +337,6 @@ function ContributionsPage() {
     }
   }
 
-  if (!isAdmin) {
-    return (
-      <AccessRestrictedCard description="Apenas usuários com permissão administrativa podem acessar a área de contribuições." />
-    )
-  }
-
   return (
     <div className="min-h-screen bg-background p-4 text-foreground sm:p-6">
       <GlobalLoading
@@ -361,6 +362,7 @@ function ContributionsPage() {
 
       <OfferDetailsModal
         isOpen={selectedOfferDetailsDate !== null}
+        canManageOffers={isAdmin}
         sunday={selectedOfferSunday}
         entries={selectedOfferEntries}
         deletingOfferId={deletingOfferId}
@@ -390,16 +392,20 @@ function ContributionsPage() {
                   {sheet ? `${sheet.openingContribution.month}/${sheet.openingContribution.year}` : "Contribuições"}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Lance os dízimos por domingo, acompanhe as ofertas e confira os totais do período.
+                  {isAdmin
+                    ? "Lance os dízimos por domingo, acompanhe as ofertas e confira os totais do período."
+                    : "Consulte os dízimos por domingo, acompanhe as ofertas e confira os totais do período."}
                 </p>
               </div>
             </div>
           </div>
 
-          <Button onClick={() => setIsOfferModalOpen(true)} disabled={!sheet || sheet.sundays.length === 0}>
-            <Gift className="h-4 w-4" />
-            Nova oferta
-          </Button>
+          {isAdmin ? (
+            <Button onClick={() => setIsOfferModalOpen(true)} disabled={!sheet || sheet.sundays.length === 0}>
+              <Gift className="h-4 w-4" />
+              Nova oferta
+            </Button>
+          ) : null}
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -466,7 +472,9 @@ function ContributionsPage() {
               <div className="flex flex-col gap-1">
                 <CardTitle className="text-xl text-foreground">Tabela de contribuições</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  A linha de ofertas permanece no topo e os valores de dízimos podem ser editados por domingo.
+                  {isAdmin
+                    ? "A linha de ofertas permanece no topo e os valores de dízimos podem ser editados por domingo."
+                    : "A linha de ofertas permanece no topo para consulta e os valores de dízimos ficam disponíveis em modo leitura."}
                 </p>
               </div>
 
@@ -484,6 +492,7 @@ function ContributionsPage() {
           <CardContent>
             {sheet ? (
               <ContributionsEditableTable
+                canEditMemberValues={isAdmin}
                 rows={filteredRows}
                 sundays={sheet.sundays}
                 offersBySunday={sheet.offersBySunday}

@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/menubar"
 
 export function AppMenubar() {
-  const { isAdmin, logout } = useAuth()
+  const { logout } = useAuth()
 
   return (
     <div className="p-4">
@@ -102,31 +102,17 @@ export function AppMenubar() {
                 <span className="hidden md:inline">Contribuições</span>
               </MenubarTrigger>
               <MenubarContent>
-                <MenubarItem asChild={isAdmin} disabled={!isAdmin} className="gap-2 disabled:cursor-not-allowed">
-                  {isAdmin ? (
-                    <Link to="/contributors" className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Contribuintes
-                    </Link>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Contribuintes
-                    </span>
-                  )}
+                <MenubarItem asChild>
+                  <Link to="/contributors" className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Contribuintes
+                  </Link>
                 </MenubarItem>
-                <MenubarItem asChild={isAdmin} disabled={!isAdmin} className="gap-2 disabled:cursor-not-allowed">
-                  {isAdmin ? (
-                    <Link to="/opening_contributions" className="flex items-center gap-2">
-                      <CalendarRange className="h-4 w-4" />
-                      Abertura de Contribuições
-                    </Link>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <CalendarRange className="h-4 w-4" />
-                      Abertura de Contribuições
-                    </span>
-                  )}
+                <MenubarItem asChild>
+                  <Link to="/opening_contributions" className="flex items-center gap-2">
+                    <CalendarRange className="h-4 w-4" />
+                    Abertura de Contribuições
+                  </Link>
                 </MenubarItem>
               </MenubarContent>
             </MenubarMenu>

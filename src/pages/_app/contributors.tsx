@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react"
 import { Plus, Users } from "lucide-react"
 import { toast } from "sonner"
 
-import { AccessRestrictedCard } from "@/components/AccessRestrictedCard"
 import { MemberFormModal, type MemberFormPayload } from "@/components/members/MemberFormModal"
 import { getMembersColumns } from "@/components/members/members-columns"
 import { DataTable } from "@/components/ui/data-table"
@@ -39,18 +38,21 @@ function ContributorsPage() {
   const columns = useMemo(
     () =>
       getMembersColumns({
+        canManage: isAdmin,
         onEdit: (member) => {
+          if (!isAdmin) return
           setSelectedMember(member)
           setIsModalOpen(true)
         },
-        onDelete: (member) => setMemberToDelete(member),
+        onDelete: (member) => {
+          if (!isAdmin) return
+          setMemberToDelete(member)
+        },
       }),
-    [],
+    [isAdmin],
   )
 
   useEffect(() => {
-    if (!isAdmin) return
-
     const fetchMembers = async () => {
       setLoading(true)
 
@@ -66,9 +68,10 @@ function ContributorsPage() {
     }
 
     void fetchMembers()
-  }, [isAdmin])
+  }, [])
 
   const handleOpenCreateModal = () => {
+    if (!isAdmin) return
     setSelectedMember(null)
     setIsModalOpen(true)
   }
@@ -80,6 +83,8 @@ function ContributorsPage() {
   }
 
   const handleSubmitMember = async (payload: MemberFormPayload) => {
+    if (!isAdmin) return
+
     setIsSubmitting(true)
 
     try {
@@ -110,7 +115,7 @@ function ContributorsPage() {
   }
 
   const handleDeleteMember = async () => {
-    if (!memberToDelete) return
+    if (!isAdmin || !memberToDelete) return
 
     setIsDeleting(true)
 
@@ -125,12 +130,6 @@ function ContributorsPage() {
     } finally {
       setIsDeleting(false)
     }
-  }
-
-  if (!isAdmin) {
-    return (
-      <AccessRestrictedCard description="Apenas usuários com permissão administrativa podem acessar a área de contribuintes." />
-    )
   }
 
   return (
@@ -172,16 +171,20 @@ function ContributorsPage() {
               <div>
                 <h1 className="text-3xl font-bold tracking-tight text-foreground">Contribuintes</h1>
                 <p className="text-sm text-muted-foreground">
-                  Gerencie os contribuintes cadastrados para manter a base atualizada.
+                  {isAdmin
+                    ? "Gerencie os contribuintes cadastrados para manter a base atualizada."
+                    : "Consulte os contribuintes cadastrados na base da igreja."}
                 </p>
               </div>
             </div>
           </div>
 
-          <Button onClick={handleOpenCreateModal} className="w-full sm:w-auto">
-            <Plus className="h-4 w-4" />
-            Novo contribuinte
-          </Button>
+          {isAdmin ? (
+            <Button onClick={handleOpenCreateModal} className="w-full sm:w-auto">
+              <Plus className="h-4 w-4" />
+              Novo contribuinte
+            </Button>
+          ) : null}
         </div>
 
         <Card className="border-border bg-card shadow-sm">
@@ -189,7 +192,9 @@ function ContributorsPage() {
             <div className="flex flex-col gap-1">
               <CardTitle className="text-xl text-foreground">Lista de contribuintes</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Consulte, cadastre, edite ou remova registros da tabela de contribuintes.
+                {isAdmin
+                  ? "Consulte, cadastre, edite ou remova registros da tabela de contribuintes."
+                  : "Consulte a listagem de contribuintes cadastrados."}
               </p>
             </div>
           </CardHeader>
