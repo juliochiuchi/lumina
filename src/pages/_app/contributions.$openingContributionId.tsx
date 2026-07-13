@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react"
-import { ArrowLeft, Award, CalendarDays, Coins, Gift, Search, Wallet } from "lucide-react"
+import { ArrowLeft, Award, CalendarDays, Coins, Gift, Printer, Search, Wallet } from "lucide-react"
 import { toast } from "sonner"
 
+import { ContributionReceiptPrintModal } from "@/components/contributions/ContributionReceiptPrintModal"
 import { ContributionsEditableTable } from "@/components/contributions/ContributionsEditableTable"
 import { OfferDetailsModal } from "@/components/contributions/OfferDetailsModal"
 import { OfferFormModal } from "@/components/contributions/OfferFormModal"
@@ -13,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { useAuth } from "@/contexts/use-auth"
 import { formatContributionCurrency } from "@/lib/contributions"
 import type { ContributionSunday } from "@/lib/opening-contributions"
+import { contributionReceiptService } from "@/services/contributionReceiptService"
 import { monthlyContributionsService, type MonthlyContributionSheet } from "@/services/monthlyContributionsService"
 
 function getErrorMessage(error: unknown) {
@@ -68,6 +70,8 @@ function ContributionsPage() {
   const [savingCellKeys, setSavingCellKeys] = useState<Set<string>>(new Set())
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false)
   const [isOfferSubmitting, setIsOfferSubmitting] = useState(false)
+  const [isReceiptPrintModalOpen, setIsReceiptPrintModalOpen] = useState(false)
+  const [isReceiptGenerating, setIsReceiptGenerating] = useState(false)
   const [selectedOfferDetailsDate, setSelectedOfferDetailsDate] = useState<string | null>(null)
   const [deletingOfferId, setDeletingOfferId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
@@ -340,10 +344,12 @@ function ContributionsPage() {
   return (
     <div className="min-h-screen bg-background p-4 text-foreground sm:p-6">
       <GlobalLoading
-        visible={loading || isOfferSubmitting || deletingOfferId !== null}
+        visible={loading || isOfferSubmitting || isReceiptGenerating || deletingOfferId !== null}
         text={
           deletingOfferId !== null
             ? "Excluindo oferta..."
+            : isReceiptGenerating
+              ? "Gerando recibo..."
             : isOfferSubmitting
               ? "Salvando oferta..."
               : "Carregando contribuições..."
@@ -358,6 +364,40 @@ function ContributionsPage() {
           if (!isOfferSubmitting) setIsOfferModalOpen(false)
         }}
         onSubmit={handleSubmitOffer}
+      />
+
+      <ContributionReceiptPrintModal
+        isOpen={isReceiptPrintModalOpen}
+        sheet={sheet}
+        isSubmitting={isReceiptGenerating}
+        onClose={() => {
+          if (!isReceiptGenerating) setIsReceiptPrintModalOpen(false)
+        }}
+        onSubmit={async (payload) => {
+          if (!sheet) {
+            return
+          }
+
+          setIsReceiptGenerating(true)
+
+          try {
+            await contributionReceiptService.printReceipt({
+              sheet,
+              dateSunday: payload.dateSunday,
+              namePersonHelping: payload.namePersonHelping,
+              rolePersonHelping: payload.rolePersonHelping,
+              printWindow: payload.printWindow,
+            })
+
+            setIsReceiptPrintModalOpen(false)
+            toast.success("Recibo gerado com sucesso")
+          } catch (error) {
+            console.error(error)
+            toast.error(getErrorMessage(error) ?? "Não foi possível gerar o recibo")
+          } finally {
+            setIsReceiptGenerating(false)
+          }
+        }}
       />
 
       <OfferDetailsModal
@@ -400,12 +440,23 @@ function ContributionsPage() {
             </div>
           </div>
 
-          {isAdmin ? (
-            <Button onClick={() => setIsOfferModalOpen(true)} disabled={!sheet || sheet.sundays.length === 0}>
-              <Gift className="h-4 w-4" />
-              Nova oferta
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setIsReceiptPrintModalOpen(true)}
+              disabled={!sheet || sheet.sundays.length === 0}
+            >
+              <Printer className="h-4 w-4" />
+              Imprimir recibo
             </Button>
-          ) : null}
+
+            {isAdmin ? (
+              <Button onClick={() => setIsOfferModalOpen(true)} disabled={!sheet || sheet.sundays.length === 0}>
+                <Gift className="h-4 w-4" />
+                Nova oferta
+              </Button>
+            ) : null}
+          </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
