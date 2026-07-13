@@ -411,7 +411,9 @@ function ContributionsPage() {
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <p className="text-2xl font-bold text-foreground xl:text-3xl">{summary.sundayCount}</p>
+              <p className="text-[1.4rem] font-bold text-foreground md:text-2xl xl:text-3xl">
+                {summary.sundayCount}
+              </p>
             </CardContent>
           </Card>
 
@@ -423,7 +425,7 @@ function ContributionsPage() {
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <p className="break-words text-2xl font-bold text-foreground xl:text-3xl">
+              <p className="break-words text-[1.4rem] font-bold text-foreground md:text-2xl xl:text-3xl">
                 {formatContributionCurrency(summary.totalTithes)}
               </p>
             </CardContent>
@@ -437,7 +439,7 @@ function ContributionsPage() {
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <p className="break-words text-2xl font-bold text-foreground xl:text-3xl">
+              <p className="break-words text-[1.4rem] font-bold text-foreground md:text-2xl xl:text-3xl">
                 {formatContributionCurrency(summary.totalOffers)}
               </p>
             </CardContent>
@@ -451,7 +453,7 @@ function ContributionsPage() {
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <p className="break-words text-2xl font-bold text-emerald-400 xl:text-3xl">
+              <p className="break-words text-[1.4rem] font-bold text-emerald-400 md:text-2xl xl:text-3xl">
                 {formatContributionCurrency(summary.grandTotal)}
               </p>
             </CardContent>

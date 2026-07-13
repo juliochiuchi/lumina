@@ -135,11 +135,17 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      <div className="flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-        <p>
-          Exibindo {table.getRowModel().rows.length} de {table.getFilteredRowModel().rows.length} registros
-        </p>
-        <div className="flex items-center justify-end gap-2">
+      <div className="flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <p>
+            Exibindo {table.getRowModel().rows.length} de {table.getFilteredRowModel().rows.length} registros
+          </p>
+          <span className="block">
+            Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount() || 1}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap justify-end gap-2">
           <Button
             type="button"
             variant="outline"
@@ -150,9 +156,6 @@ export function DataTable<TData, TValue>({
             <ChevronLeft className="h-4 w-4" />
             Anterior
           </Button>
-          <span className="min-w-24 text-center">
-            Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount() || 1}
-          </span>
           <Button
             type="button"
             variant="outline"
