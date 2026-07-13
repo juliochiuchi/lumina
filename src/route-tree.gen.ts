@@ -13,6 +13,8 @@ import { Route as AuthLayoutRouteImport } from './pages/_auth/layout'
 import { Route as AppLayoutRouteImport } from './pages/_app/layout'
 import { Route as AppIndexRouteImport } from './pages/_app/index'
 import { Route as AppReceiptsRouteImport } from './pages/_app/receipts'
+import { Route as AppOpening_contributionsRouteImport } from './pages/_app/opening_contributions'
+import { Route as AppContributorsRouteImport } from './pages/_app/contributors'
 import { Route as AppCash_flowRouteImport } from './pages/_app/cash_flow'
 import { Route as AppAnnual_presentationRouteImport } from './pages/_app/annual_presentation'
 import { Route as AppAccountabilityRouteImport } from './pages/_app/accountability'
@@ -35,6 +37,17 @@ const AppReceiptsRoute = AppReceiptsRouteImport.update({
   path: '/receipts',
   getParentRoute: () => AppLayoutRoute,
 } as any)
+const AppOpening_contributionsRoute =
+  AppOpening_contributionsRouteImport.update({
+    id: '/opening_contributions',
+    path: '/opening_contributions',
+    getParentRoute: () => AppLayoutRoute,
+  } as any)
+const AppContributorsRoute = AppContributorsRouteImport.update({
+  id: '/contributors',
+  path: '/contributors',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
 const AppCash_flowRoute = AppCash_flowRouteImport.update({
   id: '/cash_flow',
   path: '/cash_flow',
@@ -55,6 +68,8 @@ export interface FileRoutesByFullPath {
   '/accountability': typeof AppAccountabilityRoute
   '/annual_presentation': typeof AppAnnual_presentationRoute
   '/cash_flow': typeof AppCash_flowRoute
+  '/contributors': typeof AppContributorsRoute
+  '/opening_contributions': typeof AppOpening_contributionsRoute
   '/receipts': typeof AppReceiptsRoute
   '/': typeof AppIndexRoute
 }
@@ -62,6 +77,8 @@ export interface FileRoutesByTo {
   '/accountability': typeof AppAccountabilityRoute
   '/annual_presentation': typeof AppAnnual_presentationRoute
   '/cash_flow': typeof AppCash_flowRoute
+  '/contributors': typeof AppContributorsRoute
+  '/opening_contributions': typeof AppOpening_contributionsRoute
   '/receipts': typeof AppReceiptsRoute
   '/': typeof AppIndexRoute
 }
@@ -72,6 +89,8 @@ export interface FileRoutesById {
   '/_app/accountability': typeof AppAccountabilityRoute
   '/_app/annual_presentation': typeof AppAnnual_presentationRoute
   '/_app/cash_flow': typeof AppCash_flowRoute
+  '/_app/contributors': typeof AppContributorsRoute
+  '/_app/opening_contributions': typeof AppOpening_contributionsRoute
   '/_app/receipts': typeof AppReceiptsRoute
   '/_app/': typeof AppIndexRoute
 }
@@ -81,6 +100,8 @@ export interface FileRouteTypes {
     | '/accountability'
     | '/annual_presentation'
     | '/cash_flow'
+    | '/contributors'
+    | '/opening_contributions'
     | '/receipts'
     | '/'
   fileRoutesByTo: FileRoutesByTo
@@ -88,6 +109,8 @@ export interface FileRouteTypes {
     | '/accountability'
     | '/annual_presentation'
     | '/cash_flow'
+    | '/contributors'
+    | '/opening_contributions'
     | '/receipts'
     | '/'
   id:
@@ -97,6 +120,8 @@ export interface FileRouteTypes {
     | '/_app/accountability'
     | '/_app/annual_presentation'
     | '/_app/cash_flow'
+    | '/_app/contributors'
+    | '/_app/opening_contributions'
     | '/_app/receipts'
     | '/_app/'
   fileRoutesById: FileRoutesById
@@ -136,6 +161,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppReceiptsRouteImport
       parentRoute: typeof AppLayoutRoute
     }
+    '/_app/opening_contributions': {
+      id: '/_app/opening_contributions'
+      path: '/opening_contributions'
+      fullPath: '/opening_contributions'
+      preLoaderRoute: typeof AppOpening_contributionsRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
+    '/_app/contributors': {
+      id: '/_app/contributors'
+      path: '/contributors'
+      fullPath: '/contributors'
+      preLoaderRoute: typeof AppContributorsRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
     '/_app/cash_flow': {
       id: '/_app/cash_flow'
       path: '/cash_flow'
@@ -164,6 +203,8 @@ interface AppLayoutRouteChildren {
   AppAccountabilityRoute: typeof AppAccountabilityRoute
   AppAnnual_presentationRoute: typeof AppAnnual_presentationRoute
   AppCash_flowRoute: typeof AppCash_flowRoute
+  AppContributorsRoute: typeof AppContributorsRoute
+  AppOpening_contributionsRoute: typeof AppOpening_contributionsRoute
   AppReceiptsRoute: typeof AppReceiptsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -172,6 +213,8 @@ const AppLayoutRouteChildren: AppLayoutRouteChildren = {
   AppAccountabilityRoute: AppAccountabilityRoute,
   AppAnnual_presentationRoute: AppAnnual_presentationRoute,
   AppCash_flowRoute: AppCash_flowRoute,
+  AppContributorsRoute: AppContributorsRoute,
+  AppOpening_contributionsRoute: AppOpening_contributionsRoute,
   AppReceiptsRoute: AppReceiptsRoute,
   AppIndexRoute: AppIndexRoute,
 }
