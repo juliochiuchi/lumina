@@ -46,3 +46,49 @@ export function getMonthIndex(month: string) {
 export function compareContributionMonths(leftMonth: string, rightMonth: string) {
   return getMonthIndex(leftMonth) - getMonthIndex(rightMonth)
 }
+
+export function getContributionMonthNumber(month: string) {
+  const monthIndex = getMonthIndex(month)
+
+  if (monthIndex < 0) {
+    throw new Error("Mês de contribuição inválido")
+  }
+
+  return monthIndex
+}
+
+export type ContributionSunday = {
+  date: string
+  label: string
+  dayNumber: number
+}
+
+export function getContributionSundays(year: string, month: string): ContributionSunday[] {
+  const monthNumber = getContributionMonthNumber(month)
+  const parsedYear = Number(year)
+
+  if (!Number.isInteger(parsedYear)) {
+    throw new Error("Ano de contribuição inválido")
+  }
+
+  const sundays: ContributionSunday[] = []
+  const cursor = new Date(parsedYear, monthNumber, 1)
+
+  while (cursor.getMonth() === monthNumber) {
+    if (cursor.getDay() === 0) {
+      const isoDate = new Date(
+        Date.UTC(cursor.getFullYear(), cursor.getMonth(), cursor.getDate()),
+      ).toISOString().slice(0, 10)
+
+      sundays.push({
+        date: isoDate,
+        label: `DOM ${String(cursor.getDate()).padStart(2, "0")}`,
+        dayNumber: cursor.getDate(),
+      })
+    }
+
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  return sundays
+}

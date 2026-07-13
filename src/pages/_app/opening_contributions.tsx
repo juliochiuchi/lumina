@@ -7,9 +7,6 @@ import {
   OpeningContributionCard,
 } from "@/components/opening-contributions/OpeningContributionCard"
 import {
-  OpeningContributionDetailsModal,
-} from "@/components/opening-contributions/OpeningContributionDetailsModal"
-import {
   OpeningContributionFormModal,
   type OpeningContributionFormPayload,
 } from "@/components/opening-contributions/OpeningContributionFormModal"
@@ -78,7 +75,6 @@ function OpeningContributionsPage() {
   const [isPreparingModal, setIsPreparingModal] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedOpeningContribution, setSelectedOpeningContribution] = useState<OpeningContribution | null>(null)
-  const [viewOpeningContribution, setViewOpeningContribution] = useState<OpeningContributionWithTotal | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [openingToDelete, setOpeningToDelete] = useState<OpeningContributionWithTotal | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -283,12 +279,6 @@ function OpeningContributionsPage() {
         onSubmit={handleSubmitOpeningContribution}
       />
 
-      <OpeningContributionDetailsModal
-        isOpen={viewOpeningContribution !== null}
-        openingContribution={viewOpeningContribution}
-        onClose={() => setViewOpeningContribution(null)}
-      />
-
       <ConfirmationModal
         isOpen={openingToDelete !== null}
         onClose={() => {
@@ -381,7 +371,12 @@ function OpeningContributionsPage() {
               <OpeningContributionCard
                 key={openingContribution.id}
                 openingContribution={openingContribution}
-                onView={setViewOpeningContribution}
+                onView={(selected) =>
+                  navigate({
+                    to: "/contributions/$openingContributionId",
+                    params: { openingContributionId: selected.id },
+                  })
+                }
                 onEdit={handleOpenEditModal}
                 onDelete={setOpeningToDelete}
               />

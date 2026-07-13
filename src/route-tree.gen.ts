@@ -18,6 +18,7 @@ import { Route as AppContributorsRouteImport } from './pages/_app/contributors'
 import { Route as AppCash_flowRouteImport } from './pages/_app/cash_flow'
 import { Route as AppAnnual_presentationRouteImport } from './pages/_app/annual_presentation'
 import { Route as AppAccountabilityRouteImport } from './pages/_app/accountability'
+import { Route as AppContributionsOpeningContributionIdRouteImport } from './pages/_app/contributions.$openingContributionId'
 
 const AuthLayoutRoute = AuthLayoutRouteImport.update({
   id: '/_auth',
@@ -63,6 +64,12 @@ const AppAccountabilityRoute = AppAccountabilityRouteImport.update({
   path: '/accountability',
   getParentRoute: () => AppLayoutRoute,
 } as any)
+const AppContributionsOpeningContributionIdRoute =
+  AppContributionsOpeningContributionIdRouteImport.update({
+    id: '/contributions/$openingContributionId',
+    path: '/contributions/$openingContributionId',
+    getParentRoute: () => AppLayoutRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/accountability': typeof AppAccountabilityRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/opening_contributions': typeof AppOpening_contributionsRoute
   '/receipts': typeof AppReceiptsRoute
   '/': typeof AppIndexRoute
+  '/contributions/$openingContributionId': typeof AppContributionsOpeningContributionIdRoute
 }
 export interface FileRoutesByTo {
   '/accountability': typeof AppAccountabilityRoute
@@ -81,6 +89,7 @@ export interface FileRoutesByTo {
   '/opening_contributions': typeof AppOpening_contributionsRoute
   '/receipts': typeof AppReceiptsRoute
   '/': typeof AppIndexRoute
+  '/contributions/$openingContributionId': typeof AppContributionsOpeningContributionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -93,6 +102,7 @@ export interface FileRoutesById {
   '/_app/opening_contributions': typeof AppOpening_contributionsRoute
   '/_app/receipts': typeof AppReceiptsRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/contributions/$openingContributionId': typeof AppContributionsOpeningContributionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
     | '/opening_contributions'
     | '/receipts'
     | '/'
+    | '/contributions/$openingContributionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/accountability'
@@ -113,6 +124,7 @@ export interface FileRouteTypes {
     | '/opening_contributions'
     | '/receipts'
     | '/'
+    | '/contributions/$openingContributionId'
   id:
     | '__root__'
     | '/_app'
@@ -124,6 +136,7 @@ export interface FileRouteTypes {
     | '/_app/opening_contributions'
     | '/_app/receipts'
     | '/_app/'
+    | '/_app/contributions/$openingContributionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -196,6 +209,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAccountabilityRouteImport
       parentRoute: typeof AppLayoutRoute
     }
+    '/_app/contributions/$openingContributionId': {
+      id: '/_app/contributions/$openingContributionId'
+      path: '/contributions/$openingContributionId'
+      fullPath: '/contributions/$openingContributionId'
+      preLoaderRoute: typeof AppContributionsOpeningContributionIdRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
   }
 }
 
@@ -207,6 +227,7 @@ interface AppLayoutRouteChildren {
   AppOpening_contributionsRoute: typeof AppOpening_contributionsRoute
   AppReceiptsRoute: typeof AppReceiptsRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppContributionsOpeningContributionIdRoute: typeof AppContributionsOpeningContributionIdRoute
 }
 
 const AppLayoutRouteChildren: AppLayoutRouteChildren = {
@@ -217,6 +238,8 @@ const AppLayoutRouteChildren: AppLayoutRouteChildren = {
   AppOpening_contributionsRoute: AppOpening_contributionsRoute,
   AppReceiptsRoute: AppReceiptsRoute,
   AppIndexRoute: AppIndexRoute,
+  AppContributionsOpeningContributionIdRoute:
+    AppContributionsOpeningContributionIdRoute,
 }
 
 const AppLayoutRouteWithChildren = AppLayoutRoute._addFileChildren(
