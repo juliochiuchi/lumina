@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react"
-import { ArrowLeft, CalendarDays, Coins, Gift, Search, ShieldAlert, Wallet } from "lucide-react"
+import { ArrowLeft, Award, CalendarDays, Coins, Gift, Search, ShieldAlert, Wallet } from "lucide-react"
 import { toast } from "sonner"
 
 import { ContributionsEditableTable } from "@/components/contributions/ContributionsEditableTable"
@@ -158,6 +158,30 @@ function ContributionsPage() {
 
     return sheet.rows.filter((row) => normalizeSearchValue(row.memberName).includes(normalizedSearchTerm))
   }, [searchTerm, sheet])
+
+  const topContributors = useMemo(() => {
+    if (!sheet) {
+      return []
+    }
+
+    return sheet.rows
+      .map((row) => ({
+        memberId: row.memberId,
+        memberName: row.memberName,
+        total: sumValues(
+          sheet.sundays.map((sunday) =>
+            getVisibleMemberValue(
+              previewValues,
+              buildCellKey(row.memberId, sunday.date),
+              row.valuesBySunday[sunday.date] ?? null,
+            ),
+          ),
+        ),
+      }))
+      .filter((row) => row.total > 0)
+      .sort((left, right) => right.total - left.total || left.memberName.localeCompare(right.memberName, "pt-BR"))
+      .slice(0, 3)
+  }, [previewValues, sheet])
 
   const handlePreviewChange = (cellKey: string, value?: number | null) => {
     setPreviewValues((current) => {
@@ -491,6 +515,51 @@ function ContributionsPage() {
             ) : (
               <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
                 Não foi possível carregar a abertura selecionada.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card shadow-sm">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Award className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="text-xl text-foreground">Top 3 contribuintes do mês</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Ranking dos maiores valores de dízimo registrados neste período.
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {topContributors.length > 0 ? (
+              topContributors.map((contributor, index) => (
+                <div
+                  key={contributor.memberId}
+                  className="flex items-center justify-between rounded-lg border border-border bg-background/50 px-4 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{contributor.memberName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {index === 0 ? "Maior valor do mês" : `${index + 1}º maior valor do mês`}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-lg font-semibold text-emerald-400">
+                    {formatContributionCurrency(contributor.total)}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                Ainda não há dízimos registrados para montar o ranking deste mês.
               </div>
             )}
           </CardContent>
