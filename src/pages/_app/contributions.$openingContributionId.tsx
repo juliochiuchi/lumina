@@ -441,14 +441,16 @@ function ContributionsPage() {
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button
-              variant="outline"
-              onClick={() => setIsReceiptPrintModalOpen(true)}
-              disabled={!sheet || sheet.sundays.length === 0}
-            >
-              <Printer className="h-4 w-4" />
-              Imprimir recibo
-            </Button>
+            {isAdmin ? (
+              <Button
+                variant="outline"
+                onClick={() => setIsReceiptPrintModalOpen(true)}
+                disabled={!sheet || sheet.sundays.length === 0}
+              >
+                <Printer className="h-4 w-4" />
+                Imprimir recibo
+              </Button>
+            ) : null}
 
             {isAdmin ? (
               <Button onClick={() => setIsOfferModalOpen(true)} disabled={!sheet || sheet.sundays.length === 0}>

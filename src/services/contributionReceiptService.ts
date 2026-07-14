@@ -202,17 +202,17 @@ function preparePrintWindow(printWindow: Window) {
             margin: 0;
             padding: 0;
             background: #ffffff;
+            height: auto;
           }
 
           body {
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
+            display: block;
             font-family: Arial, sans-serif;
           }
 
           #print-root {
-            width: 100%;
+            width: auto;
+            margin: 0 auto;
           }
 
           .print-loading {
@@ -221,8 +221,42 @@ function preparePrintWindow(printWindow: Window) {
             font-size: 16px;
           }
 
+          .docx-wrapper {
+            padding: 0 !important;
+            background: #ffffff !important;
+          }
+
+          .docx-wrapper > section.docx {
+            margin-bottom: 0 !important;
+            box-shadow: none !important;
+          }
+
           @page {
             margin: 0;
+          }
+
+          @media print {
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              height: auto !important;
+              overflow: hidden !important;
+            }
+
+            #print-root {
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+
+            .docx-wrapper {
+              padding: 0 !important;
+            }
+
+            .docx-wrapper > section.docx {
+              margin: 0 !important;
+              break-after: auto !important;
+              page-break-after: auto !important;
+            }
           }
         </style>
       </head>
@@ -297,6 +331,7 @@ async function openGeneratedReceiptForPrint(blob: Blob, printWindow: Window) {
     ignoreWidth: false,
     ignoreHeight: false,
     inWrapper: true,
+    hideWrapperOnPrint: true,
     breakPages: true,
     useBase64URL: true,
   })

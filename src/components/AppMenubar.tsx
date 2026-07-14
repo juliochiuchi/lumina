@@ -69,6 +69,27 @@ export function AppMenubar() {
 
             <MenubarMenu>
               <MenubarTrigger className="gap-2 px-2 md:px-3">
+                <HandCoins className="h-4 w-4" />
+                <span className="hidden md:inline">Contribuições</span>
+              </MenubarTrigger>
+              <MenubarContent>
+                <MenubarItem asChild>
+                  <Link to="/contributors" className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Contribuintes
+                  </Link>
+                </MenubarItem>
+                <MenubarItem asChild>
+                  <Link to="/opening_contributions" className="flex items-center gap-2">
+                    <CalendarRange className="h-4 w-4" />
+                    Abertura de Contribuições
+                  </Link>
+                </MenubarItem>
+              </MenubarContent>
+            </MenubarMenu>
+
+            <MenubarMenu>
+              <MenubarTrigger className="gap-2 px-2 md:px-3">
                 <FileText className="h-4 w-4" />
                 <span className="hidden md:inline">Documentos</span>
               </MenubarTrigger>
@@ -92,27 +113,6 @@ export function AppMenubar() {
                 <MenubarItem disabled className="gap-2">
                   <FileDown className="h-4 w-4" />
                   Exportar
-                </MenubarItem>
-              </MenubarContent>
-            </MenubarMenu>
-
-            <MenubarMenu>
-              <MenubarTrigger className="gap-2 px-2 md:px-3">
-                <HandCoins className="h-4 w-4" />
-                <span className="hidden md:inline">Contribuições</span>
-              </MenubarTrigger>
-              <MenubarContent>
-                <MenubarItem asChild>
-                  <Link to="/contributors" className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Contribuintes
-                  </Link>
-                </MenubarItem>
-                <MenubarItem asChild>
-                  <Link to="/opening_contributions" className="flex items-center gap-2">
-                    <CalendarRange className="h-4 w-4" />
-                    Abertura de Contribuições
-                  </Link>
                 </MenubarItem>
               </MenubarContent>
             </MenubarMenu>
