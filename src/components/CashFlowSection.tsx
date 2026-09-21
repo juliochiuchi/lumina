@@ -97,6 +97,7 @@ export function CashFlowSection<TSchema extends z.ZodTypeAny>({
         <CashFlowTable
           title={tableTitle}
           data={data}
+          categories={types}
           onDelete={onDelete}
           onEdit={onEdit}
           canDelete={canManage}
