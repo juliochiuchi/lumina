@@ -1,4 +1,4 @@
-import { Pencil, Trash2, Tag, DollarSign, Clock3 } from 'lucide-react'
+import { Pencil, Trash2, Tag, DollarSign, Clock3, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { CashFlowRecord } from '@/types/cash-flow'
@@ -22,11 +22,11 @@ interface ActionButtonProps {
 
 function ActionButton({ label, icon, onClick, tone }: ActionButtonProps) {
   const toneClassName = tone === 'danger'
-    ? 'border-red-500/30 bg-red-500/12 text-red-200 hover:border-red-400/50 hover:bg-red-500/20 hover:text-white'
-    : 'border-zinc-600/60 bg-zinc-900/90 text-zinc-200 hover:border-zinc-500/80 hover:bg-zinc-800 hover:text-white'
+    ? 'text-red-400 hover:bg-red-500/15 hover:text-red-300'
+    : 'text-zinc-400 hover:bg-zinc-700/50 hover:text-zinc-100'
 
   return (
-    <div className="group relative">
+    <div className="relative">
       <Button
         type="button"
         variant="ghost"
@@ -34,13 +34,13 @@ function ActionButton({ label, icon, onClick, tone }: ActionButtonProps) {
         onClick={onClick}
         aria-label={label}
         className={cn(
-          'h-8 w-8 rounded-full border shadow-sm transition-all duration-200',
+          'peer h-7 w-7 rounded-md transition-colors duration-150',
           toneClassName
         )}
       >
         {icon}
       </Button>
-      <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 -translate-x-1/2 whitespace-nowrap rounded-full border border-zinc-700/70 bg-zinc-950/95 px-2.5 py-1 text-[11px] font-medium text-zinc-100 opacity-0 shadow-lg transition-all duration-200 group-hover:translate-y-0.5 group-hover:opacity-100">
+      <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-zinc-700/70 bg-zinc-950/95 px-2 py-0.5 text-[10px] font-medium text-zinc-200 opacity-0 shadow-md transition-opacity duration-150 peer-hover:opacity-100">
         {label}
       </span>
     </div>
@@ -61,8 +61,15 @@ export function CashFlowTable({
     ? 'border-emerald-500/20 bg-emerald-500/10'
     : 'border-rose-500/20 bg-rose-500/10'
   const totalTextColorClass = variant === 'entry' ? 'text-emerald-100' : 'text-rose-100'
-  const accentBorderClass = variant === 'entry' ? 'before:bg-emerald-400/80' : 'before:bg-rose-400/80'
-  const infoBlockClass = 'rounded-xl border border-zinc-800/70 bg-zinc-950/55 px-3 py-2.5'
+
+  const amountTextColor = variant === 'entry' ? 'text-emerald-400' : 'text-rose-400'
+  const amountBgClass = variant === 'entry'
+    ? 'bg-emerald-500/10 text-emerald-400'
+    : 'bg-rose-500/10 text-rose-400'
+  const rowAccentClass = variant === 'entry'
+    ? 'hover:border-emerald-500/20'
+    : 'hover:border-rose-500/20'
+
   const formattedTotal = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
@@ -74,42 +81,48 @@ export function CashFlowTable({
   }).format(value)
 
   const formatCreatedAt = (createdAt?: string) => {
-    if (!createdAt) return 'Data indisponível'
+    if (!createdAt) return '—'
 
     return new Intl.DateTimeFormat('pt-BR', {
-      dateStyle: 'short',
-      timeStyle: 'short',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(new Date(createdAt))
   }
 
+  const IndicatorIcon = variant === 'entry' ? ArrowUpRight : ArrowDownRight
+
   if (data.length === 0) {
     return (
-      <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/55 p-5 backdrop-blur-sm sm:p-6">
-        <div className="flex flex-col gap-3 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
-          <div className="flex flex-col items-center gap-2 sm:items-start">
-            <h3 className="flex items-center justify-center gap-2 text-xl font-semibold text-zinc-100 sm:justify-start">
-              <DollarSign className="h-5 w-5 text-[#60a5fa]" />
-              <span>{title}</span>
-            </h3>
-          </div>
-
-          <div className={cn('inline-flex flex-col items-center rounded-2xl border px-4 py-2.5 sm:items-end', totalBgColorClass)}>
-            <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-400">
-              Total acumulado
+      <div className="overflow-hidden rounded-2xl border border-zinc-800/60 bg-zinc-900/55 backdrop-blur-sm">
+        <div className="flex items-center justify-between border-b border-zinc-800/50 px-4 py-3 sm:px-5">
+          <h3 className="flex items-center gap-2 text-base font-semibold text-zinc-100">
+            <DollarSign className="h-4 w-4 text-[#60a5fa]" />
+            <span>{title}</span>
+            <span className="ml-1 rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
+              0
             </span>
-            <span className={cn('mt-1 text-xl font-semibold', totalTextColorClass)}>
+          </h3>
+
+          <div className={cn('inline-flex items-center gap-2 rounded-lg border px-3 py-1.5', totalBgColorClass)}>
+            <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+              Total
+            </span>
+            <span className={cn('text-sm font-semibold tabular-nums', totalTextColorClass)}>
               {formattedTotal}
             </span>
           </div>
         </div>
 
-        <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-zinc-800/50 flex items-center justify-center">
-            <DollarSign className="h-8 w-8 text-[#60a5fa]" />
+        <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-800/40">
+            <DollarSign className="h-6 w-6 text-[#60a5fa]/70" />
           </div>
-          <p className="text-zinc-400 text-lg">Nenhum registro encontrado</p>
+          <p className="text-sm font-medium text-zinc-300">Nenhum registro encontrado</p>
           {canDelete ? (
-            <p className="text-zinc-500 text-sm mt-1">Adicione o primeiro registro para começar</p>
+            <p className="mt-0.5 text-xs text-zinc-500">Adicione o primeiro registro para começar</p>
           ) : null}
         </div>
       </div>
@@ -117,107 +130,92 @@ export function CashFlowTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-zinc-800/60 bg-zinc-900/55 backdrop-blur-sm">
-      <div className="border-b border-zinc-800/50 px-5 py-5 sm:px-6 sm:py-6">
-        <div className="flex flex-col gap-3 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
-          <div className="flex flex-col items-center gap-2 sm:items-start">
-            <h3 className="flex items-center justify-center gap-2 text-xl font-semibold text-zinc-100 sm:justify-start">
-              <DollarSign className="h-5 w-5 text-[#60a5fa]" />
-              <span>{title}</span>
-            </h3>
-          </div>
+    <div className="overflow-hidden rounded-2xl border border-zinc-800/60 bg-zinc-900/55 backdrop-blur-sm">
+      <div className="flex items-center justify-between border-b border-zinc-800/50 px-4 py-3 sm:px-5">
+        <h3 className="flex items-center gap-2 text-base font-semibold text-zinc-100">
+          <DollarSign className="h-4 w-4 text-[#60a5fa]" />
+          <span>{title}</span>
+          <span className="ml-1 rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
+            {data.length}
+          </span>
+        </h3>
 
-          <div className={cn('inline-flex flex-col items-center rounded-2xl border px-4 py-2.5 sm:items-end', totalBgColorClass)}>
-            <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-400">
-              Total acumulado
-            </span>
-            <span className={cn('mt-1 text-xl font-semibold sm:text-2xl', totalTextColorClass)}>
-              {formattedTotal}
-            </span>
-          </div>
+        <div className={cn('inline-flex items-center gap-2 rounded-lg border px-3 py-1.5', totalBgColorClass)}>
+          <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+            Total
+          </span>
+          <span className={cn('text-sm font-semibold tabular-nums', totalTextColorClass)}>
+            {formattedTotal}
+          </span>
         </div>
       </div>
 
-      <div className="max-h-96 overflow-y-auto p-4 pr-1 [scrollbar-color:rgba(113,113,122,0.7)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-[3px] [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-600/80 [&::-webkit-scrollbar-thumb:hover]:bg-zinc-500">
-        <div className="space-y-3">
+      <div className="max-h-[420px] overflow-y-auto [scrollbar-color:rgba(113,113,122,0.6)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-700/70">
+        <ul className="divide-y divide-zinc-800/50">
           {data.map((item) => (
-            <div
+            <li
               key={item.id}
               className={cn(
-                'relative overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-950/35 px-4 py-3.5 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.9)] transition-all duration-200 hover:border-zinc-700/80 hover:bg-zinc-900/40',
-                'before:absolute before:bottom-3 before:left-0 before:top-3 before:w-px',
-                accentBorderClass
+                'group relative flex items-center gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-zinc-800/30 sm:px-5',
+                rowAccentClass
               )}
             >
-              <div className="flex flex-col gap-3 pl-3">
-                <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
-                  <div className="flex items-center gap-2 justify-self-start">
-                    {canDelete && onDelete ? (
-                      <ActionButton
-                        label="Excluir"
-                        tone="danger"
-                        onClick={() => onDelete(item)}
-                        icon={<Trash2 className="h-4 w-4" />}
-                      />
-                    ) : null}
-                    {canEdit && onEdit ? (
-                      <ActionButton
-                        label="Editar"
-                        tone="neutral"
-                        onClick={() => onEdit(item)}
-                        icon={<Pencil className="h-4 w-4" />}
-                      />
-                    ) : null}
-                  </div>
-
-                  <div className={cn(infoBlockClass, 'min-w-0 justify-self-end px-3 py-2 text-right')}>
-                    <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">
-                      Valor
-                    </div>
-                    <div className="mt-1 whitespace-normal break-words text-base font-semibold leading-5 text-zinc-100 sm:text-lg">
-                      {formatCurrency(item.amount)}
-                    </div>
-                  </div>
-                </div>
-
-                <dl className="grid gap-2 md:grid-cols-2">
-                  <div className={cn(infoBlockClass, 'md:col-span-2')}>
-                    <dt className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">
-                      Descrição
-                    </dt>
-                    <dd className="mt-1.5 whitespace-normal break-words text-sm font-medium leading-5 text-zinc-100">
-                      {item.description}
-                    </dd>
-                  </div>
-
-                  <div className={infoBlockClass}>
-                    <dt className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">
-                      Categoria
-                    </dt>
-                    <dd className="mt-1.5 flex items-start gap-2 text-sm text-zinc-200">
-                      <Tag className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-zinc-500" />
-                      <span className="whitespace-normal break-words">
-                        {item.type}
-                      </span>
-                    </dd>
-                  </div>
-
-                  <div className={infoBlockClass}>
-                    <dt className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">
-                      Registrado em
-                    </dt>
-                    <dd className="mt-1.5 flex items-start gap-2 text-sm text-zinc-200">
-                      <Clock3 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-zinc-500" />
-                      <span className="whitespace-normal break-words">
-                        {formatCreatedAt(item.createdAt)}
-                      </span>
-                    </dd>
-                  </div>
-                </dl>
+              <div className={cn(
+                'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg',
+                amountBgClass
+              )}>
+                <IndicatorIcon className="h-4.5 w-4.5" strokeWidth={2.25} />
               </div>
-            </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-zinc-100">
+                  {item.description}
+                </p>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-zinc-500">
+                  <span className="inline-flex items-center gap-1">
+                    <Tag className="h-3 w-3 text-zinc-600" />
+                    <span className="truncate text-zinc-400">{item.type}</span>
+                  </span>
+                  <span className="text-zinc-700">·</span>
+                  <span className="inline-flex items-center gap-1">
+                    <Clock3 className="h-3 w-3 text-zinc-600" />
+                    <span className="tabular-nums text-zinc-400">{formatCreatedAt(item.createdAt)}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-shrink-0 items-center gap-1.5">
+                {canEdit && onEdit ? (
+                  <div className="opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                    <ActionButton
+                      label="Editar"
+                      tone="neutral"
+                      onClick={() => onEdit(item)}
+                      icon={<Pencil className="h-3.5 w-3.5" />}
+                    />
+                  </div>
+                ) : null}
+                {canDelete && onDelete ? (
+                  <div className="opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                    <ActionButton
+                      label="Excluir"
+                      tone="danger"
+                      onClick={() => onDelete(item)}
+                      icon={<Trash2 className="h-3.5 w-3.5" />}
+                    />
+                  </div>
+                ) : null}
+
+                <div className={cn(
+                  'ml-1 rounded-md px-2 py-1 text-sm font-semibold tabular-nums',
+                  amountTextColor
+                )}>
+                  {variant === 'entry' ? '+' : '-'} {formatCurrency(item.amount)}
+                </div>
+              </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </div>
   )
