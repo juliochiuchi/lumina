@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useCallback } from 'react'
-import { TrendingUp, TrendingDown, CalendarDays, Clock } from 'lucide-react'
+import { TrendingUp, TrendingDown, CalendarDays, Clock, BellRing } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, AlignmentType, WidthType, BorderStyle } from 'docx'
 import { saveAs } from 'file-saver'
@@ -10,6 +10,7 @@ import { categoriesService, type Category } from '@/services/categoriesService'
 import { cashFlowService, type CashFlow } from '@/services/cashFlowService'
 import { inflowsService, type Inflow } from '@/services/inflowsService'
 import { outflowsService, type Outflow } from '@/services/outflowsService'
+import { notificationService } from '@/services/notificationService'
 
 // Componentes extraídos
 import { CashFlowSection } from '@/components/CashFlowSection'
@@ -21,6 +22,7 @@ import { FinancialSummary } from '@/components/FinancialSummary'
 import { GlobalLoading } from '@/components/ui/global-loading'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
+import { Button } from '@/components/ui/button'
 import { SessionExitButton } from '@/components/ui/session-exit-button'
 import { useAuth } from '@/contexts/use-auth'
 import { entrySchema, exitSchema } from '@/lib/cash-flow'
@@ -101,6 +103,8 @@ function CashFlow() {
   const [entryEditorState, setEntryEditorState] = useState<CashFlowEditorState>(createInitialEditorState())
   const [exitEditorState, setExitEditorState] = useState<CashFlowEditorState>(createInitialEditorState())
   const [isRestartConfirmOpen, setIsRestartConfirmOpen] = useState(false)
+  const [isNotifyConfirmOpen, setIsNotifyConfirmOpen] = useState(false)
+  const [isNotifying, setIsNotifying] = useState(false)
   const [pendingDeleteRecord, setPendingDeleteRecord] = useState<PendingDeleteState | null>(null)
   const [isDeletingRecord, setIsDeletingRecord] = useState(false)
   // Removido controle de localStorage
@@ -442,6 +446,44 @@ function CashFlow() {
     setIsRestartConfirmOpen(false)
     resetCashFlowState()
     navigate({ to: '/' })
+  }
+
+  const notifyMonthLabel = cashFlowInfo?.regard_month || nameMonthExport || '—'
+  const notifyYearLabel = cashFlowInfo?.year || (anoAtual ? String(anoAtual) : '—')
+
+  const handleConfirmNotifyCouncil = async () => {
+    if (!currentMovementId) return
+
+    const month = cashFlowInfo?.regard_month || nameMonthExport
+    const year = cashFlowInfo?.year || (anoAtual ? String(anoAtual) : '')
+
+    if (!month || !year) {
+      toast.error('Não foi possível identificar o mês e o ano da movimentação.')
+      return
+    }
+
+    setIsNotifying(true)
+    try {
+      const result = await notificationService.notifyCouncil({
+        month,
+        year,
+        cashFlowName: cashFlowInfo?.name,
+      })
+
+      if (result.sent === 0) {
+        toast.error('Nenhuma notificação pôde ser enviada. Verifique os destinatários.')
+      } else {
+        toast.success(
+          `Notificação enviada para ${result.sent} de ${result.recipients} destinatário(s).`,
+        )
+      }
+      setIsNotifyConfirmOpen(false)
+    } catch (error) {
+      console.error('Erro ao notificar conselho:', error)
+      toast.error('Erro ao enviar a notificação. Tente novamente.')
+    } finally {
+      setIsNotifying(false)
+    }
   }
 
   const pendingDeleteLabel = pendingDeleteRecord
@@ -1313,10 +1355,27 @@ function CashFlow() {
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <ExportButtons
-                          onExportExcel={exportToExcel}
-                          onExportDocx={exportToDocx}
-                        />
+                        <div className="flex flex-col gap-3">
+                          <ExportButtons
+                            onExportExcel={exportToExcel}
+                            onExportDocx={exportToDocx}
+                          />
+                          {isAdmin ? (
+                            <Button
+                              onClick={() => setIsNotifyConfirmOpen(true)}
+                              variant="outline"
+                              className="h-auto min-h-11 w-full justify-start rounded-lg border-emerald-800/60 bg-emerald-950/30 px-4 py-3 text-left whitespace-normal text-emerald-100 shadow-none hover:bg-emerald-900/40 hover:text-white"
+                            >
+                              <BellRing className="h-4 w-4" />
+                              <span className="min-w-0 break-words">
+                                Notificar conselho{' '}
+                                <span className="text-[.8rem] font-light italic text-emerald-200/70">
+                                  (mês finalizado)
+                                </span>
+                              </span>
+                            </Button>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1473,6 +1532,17 @@ function CashFlow() {
         cancelText="Cancelar"
         isLoading={isDeletingRecord}
         confirmVariant="destructive"
+      />
+      <ConfirmationModal
+        isOpen={isNotifyConfirmOpen}
+        onClose={() => setIsNotifyConfirmOpen(false)}
+        onConfirm={handleConfirmNotifyCouncil}
+        title="Notificar conselho?"
+        description={`Um e-mail será enviado a todos os usuários cadastrados informando que o lançamento de ${notifyMonthLabel} de ${notifyYearLabel} foi finalizado e está disponível para consulta na plataforma.`}
+        confirmText="Sim"
+        cancelText="Não"
+        isLoading={isNotifying}
+        confirmVariant="default"
       />
     </div>
   )

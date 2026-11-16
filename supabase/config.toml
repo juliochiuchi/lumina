@@ -1,0 +1,4 @@
+project_id = "lumina"
+
+[functions.send-month-notification]
+verify_jwt = true
